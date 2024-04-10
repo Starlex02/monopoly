@@ -6,5 +6,9 @@ import { Component, Input } from '@angular/core';
   styleUrls: ['./cell.component.css']
 })
 export class CellComponent {
+[x: string]: any;
   @Input() cell: any;
+  
 }
+
+

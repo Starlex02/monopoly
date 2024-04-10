@@ -1,3 +1,5 @@
 <div class="board">
-    <app-cell *ngFor="let cell of cells" [ngClass]="[cell.type, cell.pos ? cell.pos: '']" [cell]="cell"></app-cell>
+    <app-cell *ngFor="let cell of cells" [ngClass]="[cell.type, cell.pos ? cell.pos: '']" [cell]="cell" (click)="showPopup(cell)"></app-cell>
 </div>
+
+<app-popup-card *ngIf="popupVisible" [data]="popupData"></app-popup-card>
