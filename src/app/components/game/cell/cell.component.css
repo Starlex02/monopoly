@@ -1,0 +1,30 @@
+.start {
+  background-color: green;
+}
+
+.monopoly {
+  background-color: yellow;
+}
+
+.chance {
+  background-color: blue;
+}
+
+.prison {
+  background-color: gray;
+}
+
+.jackpot {
+  background-color: red;
+}
+
+.cell {
+  border: 1px solid black;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+

@@ -1,1 +1,3 @@
-<p>board works!</p>
+<div class="board">
+    <app-cell *ngFor="let cell of cells" [ngClass]="[cell.type, cell.pos ? cell.pos: '']" [cell]="cell"></app-cell>
+</div>
