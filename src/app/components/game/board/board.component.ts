@@ -13,6 +13,8 @@ export class BoardComponent {
 
   showPopup(cell: any) {
     this.popupData = cell;
-    this.popupVisible = !this.popupVisible;
+    if(this.popupData.type === 'monopoly'){
+      this.popupVisible = !this.popupVisible;
+    }
   }
 }
