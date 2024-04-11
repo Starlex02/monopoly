@@ -9,6 +9,7 @@ import { PopupCardComponent } from './components/game/popup-card/popup-card.comp
 import { GameSessionComponent } from './views/game-session/game-session.component';
 import { PlayersComponent } from './components/game/players/players.component';
 import { PlayerCardComponent } from './components/game/player-card/player-card.component';
+import { TokenComponent } from './components/game/token/token.component';
 
 @NgModule({
   declarations: [
@@ -18,7 +19,8 @@ import { PlayerCardComponent } from './components/game/player-card/player-card.c
     PopupCardComponent,
     GameSessionComponent,
     PlayersComponent,
-    PlayerCardComponent
+    PlayerCardComponent,
+    TokenComponent
   ],
   imports: [
     BrowserModule,
