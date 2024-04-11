@@ -15,6 +15,8 @@ export class BoardComponent {
     this.popupData = cell;
     if(this.popupData.type === 'monopoly'){
       this.popupVisible = !this.popupVisible;
+    } else {
+      this.popupVisible = false;
     }
   }
 }
