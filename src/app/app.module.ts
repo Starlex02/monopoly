@@ -7,6 +7,8 @@ import { BoardComponent } from './components/game/board/board.component';
 import { CellComponent } from './components/game/cell/cell.component';
 import { PopupCardComponent } from './components/game/popup-card/popup-card.component';
 import { GameSessionComponent } from './views/game-session/game-session.component';
+import { PlayersComponent } from './components/game/players/players.component';
+import { PlayerCardComponent } from './components/game/player-card/player-card.component';
 
 @NgModule({
   declarations: [
@@ -14,7 +16,9 @@ import { GameSessionComponent } from './views/game-session/game-session.componen
     BoardComponent,
     CellComponent,
     PopupCardComponent,
-    GameSessionComponent
+    GameSessionComponent,
+    PlayersComponent,
+    PlayerCardComponent
   ],
   imports: [
     BrowserModule,

@@ -7,7 +7,7 @@ import { boardCells } from './board-data';
   styleUrls: ['./board.component.css']
 })
 export class BoardComponent {
-  cells: any[] = boardCells; // Дані про клітинки поля
+  cells: any[] = boardCells;
   popupVisible = false;
   popupData: any;
 
