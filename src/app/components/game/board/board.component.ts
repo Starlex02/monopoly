@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { boardCells } from './board-data';
 
 @Component({
-  selector: 'app-board',
+  selector: 'game-board',
   templateUrl: './board.component.html',
   styleUrls: ['./board.component.css']
 })

@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 @Component({
-  selector: 'app-popup-card',
+  selector: 'game-popup-card',
   templateUrl: './popup-card.component.html',
   styleUrls: ['./popup-card.component.css']
 })
