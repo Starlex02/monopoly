@@ -1,6 +1,9 @@
+
+
 export const boardCells = [
   {
-    type: 'start'
+    type: 'start',
+    identity: 0
   },
   {
     type: 'monopoly',
@@ -17,10 +20,12 @@ export const boardCells = [
     rent_5: 1000,
     buy_branch: 100,
     sell_branch: 100,
+    identity: 1
   },
   {
     type: 'chance',
-    pos: 'top'
+    pos: 'top',
+    identity: 2
   },
   {   
     type: 'monopoly',

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'player-token',
@@ -6,5 +6,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./token.component.css']
 })
 export class TokenComponent {
-
+  @Input() position: any;
 }

@@ -1,4 +1,4 @@
 <body-players></body-players>
 <game-board></game-board>
-<div><player-token></player-token></div>
+<div><player-token *ngFor="let position of positions" [position] = "position" ></player-token></div>
 
