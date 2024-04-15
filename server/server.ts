@@ -1,9 +1,26 @@
-// equivalent of older: const express = require('express')
 import { routes } from './routes';
-
 import express from 'express';
+import mysql from 'mysql';
 
 const app = express();
+
+// Параметри підключення до бази даних MySQL
+const connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'monopoly',
+  password: 'password',
+  database: 'monopoly',
+});
+
+// Підключення до бази даних
+connection.connect((err) => {
+  if (err) {
+    console.error('Помилка підключення до бази даних:', err.stack);
+    return;
+  }
+  console.log('Підключено до бази даних з id', connection.threadId);
+});
+
 // Allow any method from any host and log requests
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -16,9 +33,11 @@ app.use((req, res, next) => {
         next();
     }
 });
+
 // Handle POST requests that come in formatted as JSON
 app.use(express.json())
 
+// Використання маршрутів
 app.use('/', routes);
 
 // start our server on port 4201
