@@ -44,6 +44,14 @@ export class WebSocketService {
     });
   }
 
+  placeNewPlayer() {
+    return new Observable<any>(observer => {
+      this.socket.on('placeNewPlayer', (data: any) => {
+        observer.next(data);
+      });
+    });
+  }
+
   // onConnected(callback: () => void) {
   //   this.socket.on('connect', callback);
   // }

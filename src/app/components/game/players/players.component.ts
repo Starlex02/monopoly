@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { playersInfo } from './players-data';
+import { WebSocketService } from '../../../services/web-socket/web-socket.service';
 
 @Component({
   selector: 'body-players',
@@ -7,5 +7,14 @@ import { playersInfo } from './players-data';
   styleUrls: ['./players.component.css']
 })
 export class PlayersComponent {
-  playersInfo: any[] = playersInfo;
+  playersInfo: any[] = [];
+
+  constructor(private webSocketService: WebSocketService) { }
+
+  ngOnInit() {    
+    this.webSocketService.placeNewPlayer().subscribe((newPlayerInfo: []) => {
+      this.playersInfo = newPlayerInfo;
+      console.log(this.playersInfo)
+    }); 
+  }
 }

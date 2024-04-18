@@ -1,14 +1,14 @@
 import express from 'express';
 import { Server } from 'socket.io';
 import mysql from 'mysql';
-import cors from 'cors';
 
 const app = express();
-app.use(cors()); // Додайте цей рядок для налаштування CORS
 
 const server = app.listen(4201, "0.0.0.0", () => {
   console.log("server is listening on port 4201");
 });
+
+let players = [];
 
 const io = new Server(server, {
   cors: {
@@ -41,7 +41,12 @@ connection.connect((err: any) => {
 io.sockets.on('connection', (socket: any) => {
   console.log('Клієнт підключений до WebSocket сервера');
 
-  socket.on('getBoardCells', (message: any) => {
+  const newPlayerInfo = {id: socket.id, name: `Player ${socket.id}`, color: getRandomColor(), balance: 1000};
+  players.push(newPlayerInfo);
+  socket.broadcast.emit('placeNewPlayer', players);
+  socket.emit('placeNewPlayer', players);
+
+  socket.on('getBoardCells', () => {
     connection.query('SELECT * FROM board_cells', (err, results, fields) => {
       if (err) {
         console.error('Помилка запиту до бази даних:', err);
@@ -52,6 +57,21 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('disconnect', () => {
+    players.forEach((player, index) => {
+      if (player.id === socket.id) {
+        players.splice(index, 1);
+      }
+    });
+    socket.broadcast.emit('placeNewPlayer', players);
     console.log('Клієнт відключений від WebSocket сервера');
   });
 });
+
+function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
