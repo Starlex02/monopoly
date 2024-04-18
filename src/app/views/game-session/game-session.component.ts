@@ -10,7 +10,13 @@ import { tokenPos } from './token-data';
 export class GameSessionComponent {
   positions = tokenPos;
 
-  constructor(private webSocketService: WebSocketService) { }
+  constructor(private webSocketService: WebSocketService) { 
+    // Підключення до WebSocket сервера та встановлення колбека
+    this.webSocketService.onConnected(() => {
+      // Відправлення повідомлення після успішного підключення
+      this.webSocketService.sendMessage('Привіт, це повідомлення від клієнта!');
+    });
+  }
   
   ngAfterViewInit() {
     setTimeout(() => {
