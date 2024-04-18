@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { WebSocketService } from '../../services/web-socket/web-socket.service';
 import { tokenPos } from './token-data';
 
 @Component({
@@ -8,6 +9,8 @@ import { tokenPos } from './token-data';
 })
 export class GameSessionComponent {
   positions = tokenPos;
+
+  constructor(private webSocketService: WebSocketService) { }
   
   ngAfterViewInit() {
     setTimeout(() => {

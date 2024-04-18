@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BoardComponent } from './components/game/board/board.component';
@@ -10,6 +9,7 @@ import { GameSessionComponent } from './views/game-session/game-session.componen
 import { PlayersComponent } from './components/game/players/players.component';
 import { PlayerCardComponent } from './components/game/player-card/player-card.component';
 import { TokenComponent } from './components/game/token/token.component';
+import { WebSocketService } from './services/web-socket/web-socket.service';
 
 @NgModule({
   declarations: [
@@ -26,7 +26,8 @@ import { TokenComponent } from './components/game/token/token.component';
     BrowserModule,
     AppRoutingModule
   ],
-  providers: [],
+  providers: [WebSocketService],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+}
