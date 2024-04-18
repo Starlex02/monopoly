@@ -1,5 +1,5 @@
 <div class="board">
-    <game-cell *ngFor="let cell of cells" [ngClass]="[cell.type, cell.pos ? cell.pos: '']" [id]="'cell-' + cell.identity" [cell]="cell" (click)="showPopup(cell)"></game-cell>
+    <game-cell *ngFor="let cell of cells" [ngClass]="[cell.type, cell.pos ? cell.pos: '']" [id]="'cell-' + cell.id" [cell]="cell" (click)="showPopup(cell)"></game-cell>
 </div>
 
 <game-popup-card *ngIf="popupVisible" [data]="popupData"></game-popup-card>

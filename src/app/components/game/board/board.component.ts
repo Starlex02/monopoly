@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { boardCells } from './board-data';
+import { WebSocketService } from '../../../services/web-socket/web-socket.service';
 
 @Component({
   selector: 'game-board',
@@ -7,13 +7,24 @@ import { boardCells } from './board-data';
   styleUrls: ['./board.component.css']
 })
 export class BoardComponent {
-  cells: any[] = boardCells;
+  cells: any[] = [];
   popupVisible = false;
   popupData: any;
 
+  constructor(private webSocketService: WebSocketService) { }
+
+  ngOnInit() {
+    this.webSocketService.emit('getBoardCells');
+    
+    this.webSocketService.getBoardCells().subscribe((message: []) => {
+      this.cells = message;
+    }); 
+  }
+
+
   showPopup(cell: any) {
     this.popupData = cell;
-    if(this.popupData.type === 'monopoly'){
+    if (this.popupData.type === 'monopoly') {
       this.popupVisible = !this.popupVisible;
     } else {
       this.popupVisible = false;

@@ -24,31 +24,43 @@ export class WebSocketService {
     });
   }
 
-  emit(func: string, message: string) {
-    this.socket.emit(func, message);
+  emit(func: string, message?: string) {
+    if (message !== undefined) {
+      this.socket.emit(func, message);
+    } else {
+      this.socket.emit(func);
+    }
   }
 
   disconnect() {
     this.socket.disconnect();
   }
 
+  getBoardCells(): Observable<any> {
+    return new Observable<any>(observer => {
+      this.socket.on('getBoardCells', (data: any) => {
+        observer.next(data);
+      });
+    });
+  }
+
   // onConnected(callback: () => void) {
   //   this.socket.on('connect', callback);
   // }
 
-  onMessage(): Observable<any> {
-    return new Observable<any>(observer => {
-      this.socket.on('message', (data: any) => {
-        observer.next(data);
-      });
-    });
-  }
+  // onMessage(): Observable<any> {
+  //   return new Observable<any>(observer => {
+  //     this.socket.on('message', (data: any) => {
+  //       observer.next(data);
+  //     });
+  //   });
+  // }
 
-  onTest(): Observable<any> {
-    return new Observable<any>(observer => {
-      this.socket.on('test', (data: any) => {
-        observer.next(data);
-      });
-    });
-  }
+  // onTest(): Observable<any> {
+  //   return new Observable<any>(observer => {
+  //     this.socket.on('test', (data: any) => {
+  //       observer.next(data);
+  //     });
+  //   });
+  // }
 }

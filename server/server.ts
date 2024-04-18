@@ -41,10 +41,14 @@ connection.connect((err: any) => {
 io.sockets.on('connection', (socket: any) => {
   console.log('Клієнт підключений до WebSocket сервера');
 
-  socket.on('message', (message: any) => {
-    console.log(message);
-    socket.emit('message', 'Привіт, від сервера');
-    socket.emit('test', 'Подвійна перевірка)');
+  socket.on('getBoardCells', (message: any) => {
+    connection.query('SELECT * FROM board_cells', (err, results, fields) => {
+      if (err) {
+        console.error('Помилка запиту до бази даних:', err);
+        return;
+      }
+      socket.emit('getBoardCells', results);
+    });
   });
 
   socket.on('disconnect', () => {

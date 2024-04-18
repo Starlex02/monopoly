@@ -1,6 +1,6 @@
 <div class="cell" [ngClass]="[cell?.type, cell?.pos ? cell.pos : '']">
     <div class="image"></div>
-    <div [ngClass]="cell?.group ? 'group-' + cell?.group : ''">
+    <div [ngClass]="cell?.group_id ? 'group-' + cell?.group_id : ''">
         <p>{{cell.cost}}</p>
     </div>
 </div>
