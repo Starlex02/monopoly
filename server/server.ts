@@ -1,5 +1,24 @@
-import WebSocket, { WebSocketServer } from 'ws';
+import express from 'express';
+import { Server } from 'socket.io';
 import mysql from 'mysql';
+import cors from 'cors';
+
+const app = express();
+app.use(cors()); // Додайте цей рядок для налаштування CORS
+
+const server = app.listen(4201, "0.0.0.0", () => {
+  console.log("server is listening on port 4201");
+});
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:4200", // Встановіть URL вашого клієнта Angular
+    methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
+  }
+});
+
 
 // Параметри підключення до бази даних MySQL
 const connection = mysql.createConnection({
@@ -10,7 +29,7 @@ const connection = mysql.createConnection({
 });
 
 // Підключення до бази даних
-connection.connect((err) => {
+connection.connect((err: any) => {
   if (err) {
     console.error('Помилка підключення до бази даних:', err);
     return;
@@ -18,29 +37,17 @@ connection.connect((err) => {
   console.log('Підключено до бази даних MySQL');
 });
 
-// Створення WebSocket сервера
-const wsServer = new WebSocketServer({ port: 4201 });
-
 // Обробник події підключення нового клієнта до WebSocket сервера
-wsServer.on('connection', (ws: WebSocket) => {
+io.sockets.on('connection', (socket: any) => {
   console.log('Клієнт підключений до WebSocket сервера');
 
-  // Обробник події при отриманні повідомлення від клієнта
-  ws.on('message', (message: string) => {
-    console.log(`Отримано повідомлення від клієнта: ${message}`);
-    
-    // Наприклад, виконати запит до бази даних MySQL
-    connection.query('SELECT * FROM board_cells', (err, results, fields) => {
-      if (err) {
-        console.error('Помилка запиту до бази даних:', err);
-        return;
-      }
-      console.log('Результати запиту:', results);
-    });
+  socket.on('message', (message: any) => {
+    console.log(message);
+    socket.emit('message', 'Привіт, від сервера');
+    socket.emit('test', 'Подвійна перевірка)');
   });
 
-  // Обробник події відключення клієнта від WebSocket сервера
-  ws.on('close', () => {
+  socket.on('disconnect', () => {
     console.log('Клієнт відключений від WebSocket сервера');
   });
 });

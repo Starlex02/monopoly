@@ -1,54 +1,54 @@
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { io, Socket } from 'socket.io-client';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WebSocketService {
-  private socket: WebSocket;
-  private connectedCallback!: () => void;
+  private socket: Socket;
 
   constructor() {
-    this.socket = new WebSocket('ws://localhost:4201');
+    this.socket = io('ws://localhost:4201');
     
-    this.socket.onopen = () => {
+    this.socket.on('connect', () => {
       console.log('Connected to server');
-      if (this.connectedCallback) {
-        this.connectedCallback(); // Викликаємо колбек після успішного підключення
-      }
-    };
+    });
 
-    this.socket.onmessage = (event) => {
-      console.log(`Received message: ${event.data}`);
-    };
+    this.socket.on('message', (data: any) => {
+      console.log(`Received message: ${data}`);
+    });
 
-    this.socket.onclose = () => {
+    this.socket.on('disconnect', () => {
       console.log('Connection closed');
-    };
+    });
   }
 
-  connect() {
-    this.socket.onopen = () => {
-      this.socket.send('message');
-    };
-
-    this.socket.onmessage = (event) => {
-      console.log(`Received message: ${event.data}`);
-    };
-
-    this.socket.onclose = () => {
-      console.log('Connection closed');
-    };
+  emit(func: string, message: string) {
+    this.socket.emit(func, message);
   }
 
   disconnect() {
-    this.socket.close();
+    this.socket.disconnect();
   }
 
-  sendMessage(message: string) {
-    this.socket.send(message);
+  // onConnected(callback: () => void) {
+  //   this.socket.on('connect', callback);
+  // }
+
+  onMessage(): Observable<any> {
+    return new Observable<any>(observer => {
+      this.socket.on('message', (data: any) => {
+        observer.next(data);
+      });
+    });
   }
 
-  onConnected(callback: () => void) {
-    this.connectedCallback = callback;
+  onTest(): Observable<any> {
+    return new Observable<any>(observer => {
+      this.socket.on('test', (data: any) => {
+        observer.next(data);
+      });
+    });
   }
 }

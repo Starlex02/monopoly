@@ -10,11 +10,18 @@ import { tokenPos } from './token-data';
 export class GameSessionComponent {
   positions = tokenPos;
 
-  constructor(private webSocketService: WebSocketService) { 
+  constructor(private webSocketService: WebSocketService) {}
+
+  ngOnInit() {
     // Підключення до WebSocket сервера та встановлення колбека
-    this.webSocketService.onConnected(() => {
-      // Відправлення повідомлення після успішного підключення
-      this.webSocketService.sendMessage('Привіт, це повідомлення від клієнта!');
+    this.webSocketService.emit('message','Привіт, це повідомлення від клієнта!');
+
+    this.webSocketService.onMessage().subscribe((message: string) => {
+      console.log(message);
+    });
+
+    this.webSocketService.onTest().subscribe((message: string) => {
+      console.log(message);
     });
   }
   
