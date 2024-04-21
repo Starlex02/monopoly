@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { WebSocketService } from '../../services/web-socket/web-socket.service';
-import { tokenPos } from './token-data';
+import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
+import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 
 @Component({
   selector: 'game-session',
@@ -8,19 +8,14 @@ import { tokenPos } from './token-data';
   styleUrls: ['./game-session.component.css']
 })
 export class GameSessionComponent {
-  positions = tokenPos;
+  playersInfo: any[] = [];
 
-  constructor(private webSocketService: WebSocketService) {}
+  constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService) { }
 
-  // setPosition() {
-  //   this.positions.forEach(position => {
-  //     let cell = document.getElementById('cell-' + position.position);
-  //     if(cell){
-  //       let cellPos = cell.getBoundingClientRect();
-  //       position.x = cellPos.left + cellPos.width/2 - 5 + 'px';
-  //       position.y = cellPos.top + cellPos.height/2 - 5 + 'px';
-  //     }
-  //   });
-  // }
+  ngOnInit() {
+    this.gameSessionService.cellsInfo$.subscribe(() => {
+      this.playersInfo = this.gameSessionService.playersInfo;
+    });
+  }
 
 }

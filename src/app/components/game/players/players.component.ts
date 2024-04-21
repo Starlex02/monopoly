@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { WebSocketService } from '../../../services/web-socket/web-socket.service';
+import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
+import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 
 @Component({
   selector: 'body-players',
@@ -9,12 +10,15 @@ import { WebSocketService } from '../../../services/web-socket/web-socket.servic
 export class PlayersComponent {
   playersInfo: any[] = [];
 
-  constructor(private webSocketService: WebSocketService) { }
+  constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService) { }
 
-  ngOnInit() {    
+  ngOnInit() {
     this.webSocketService.placeNewPlayer().subscribe((newPlayerInfo: []) => {
       this.playersInfo = newPlayerInfo;
-      console.log(this.playersInfo)
-    }); 
+      this.gameSessionService.playersInfo = newPlayerInfo;
+
+      this.webSocketService.emit('getBoardCells');
+    });
   }
 }
+

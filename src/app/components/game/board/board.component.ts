@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { WebSocketService } from '../../../services/web-socket/web-socket.service';
+import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
+import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 
 @Component({
   selector: 'game-board',
@@ -11,11 +12,9 @@ export class BoardComponent {
   popupVisible = false;
   popupData: any;
 
-  constructor(private webSocketService: WebSocketService) { }
+  constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService) { }
 
-  ngOnInit() {
-    this.webSocketService.emit('getBoardCells');
-    
+  ngOnInit() {    
     this.webSocketService.getBoardCells().subscribe((message: []) => {
       this.cells = message;
     }); 
