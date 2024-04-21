@@ -8,7 +8,7 @@ const server = app.listen(4201, "0.0.0.0", () => {
   console.log("server is listening on port 4201");
 });
 
-let players = [];
+let players: any[] = [];
 
 const io = new Server(server, {
   cors: {
@@ -41,10 +41,26 @@ connection.connect((err: any) => {
 io.sockets.on('connection', (socket: any) => {
   console.log('Клієнт підключений до WebSocket сервера');
 
-  const newPlayerInfo = {id: socket.id, name: `Player ${socket.id}`, color: getRandomColor(), balance: 1000};
-  players.push(newPlayerInfo);
-  socket.broadcast.emit('placeNewPlayer', players);
-  socket.emit('placeNewPlayer', players);
+  const playerData = {
+    player_id: socket.id,
+    name: `Player ${socket.id}`,
+    session_id: 1,
+    balance: 1000,
+    cell_id: 1,
+    color: getRandomColor()
+  };
+  
+  const sql = `INSERT INTO players SET ?`;
+  
+  connection.query(sql, playerData, (err, results, fields) => {
+    if (err) {
+      console.error('Помилка запиту до бази даних:', err);
+      return;
+    }
+    players.push(playerData);
+    io.emit('placeNewPlayer', players);
+  });
+  
 
   socket.on('getBoardCells', () => {
     connection.query('SELECT * FROM board_cells', (err, results, fields) => {
@@ -58,11 +74,12 @@ io.sockets.on('connection', (socket: any) => {
 
   socket.on('disconnect', () => {
     players.forEach((player, index) => {
-      if (player.id === socket.id) {
+      if (player.player_id === socket.id) {
         players.splice(index, 1);
       }
     });
     socket.broadcast.emit('placeNewPlayer', players);
+    connection.query(`DELETE FROM players WHERE player_id = '${socket.id}'`);
     console.log('Клієнт відключений від WebSocket сервера');
   });
 });
@@ -73,5 +90,6 @@ function getRandomColor() {
   for (let i = 0; i < 6; i++) {
     color += letters[Math.floor(Math.random() * 16)];
   }
+  
   return color;
 }
