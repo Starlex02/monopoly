@@ -59,6 +59,9 @@ io.sockets.on('connection', (socket: any) => {
     });
     socket.broadcast.emit('placeNewPlayer', players);
     connection.query(`DELETE FROM players WHERE player_id = '${socket.id}'`);
+
+    removePlayerFromTurnOrder(socket.id);
+
     console.log('Клієнт відключений від WebSocket сервера');
   });
 });
@@ -94,5 +97,58 @@ function handleNewPlayerConnection(socketId: string) {
     }
     players.push(playerData);
     io.emit('placeNewPlayer', players);
+
+    addPlayerToTurnOrder(socketId);
   });
 }
+
+function addPlayerToTurnOrder(socketId: string) {
+  // Отримати поточний порядок ходу з бази даних
+  connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
+    if (err) {
+      console.error('Помилка запиту до бази даних:', err);
+      return;
+    }
+    
+    // Отримати поточний порядок ходу
+    let turnOrder = results[0].turn_order || '';
+    
+    // Додати новий ID користувача до порядку ходу
+    turnOrder += (turnOrder ? ',' : '') + socketId;
+    
+    // Оновити запис у таблиці game_sessions з новим порядком ходу
+    connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
+      if (err) {
+        console.error('Помилка оновлення запису у таблиці game_sessions:', err);
+        return;
+      }
+      console.log(`Гравець з ID ${socketId} доданий до порядку ходу.`);
+    });
+  });
+}
+
+function removePlayerFromTurnOrder(socketId: string) {
+  // Отримати поточний порядок ходу з бази даних
+  connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
+    if (err) {
+      console.error('Помилка запиту до бази даних:', err);
+      return;
+    }
+    
+    // Отримати поточний порядок ходу
+    let turnOrder = results[0].turn_order || '';
+    
+    // Видалити ID користувача з порядку ходу, якщо він є
+    turnOrder = turnOrder.split(',').filter((id: string) => id !== socketId).join(',');
+    
+    // Оновити запис у таблиці game_sessions з оновленим порядком ходу
+    connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
+      if (err) {
+        console.error('Помилка оновлення запису у таблиці game_sessions:', err);
+        return;
+      }
+      console.log(`Гравець з ID ${socketId} видалений з порядку ходу.`);
+    });
+  });
+}
+
