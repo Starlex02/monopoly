@@ -39,28 +39,7 @@ connection.connect((err: any) => {
 
 // Обробник події підключення нового клієнта до WebSocket сервера
 io.sockets.on('connection', (socket: any) => {
-  console.log('Клієнт підключений до WebSocket сервера');
-
-  const playerData = {
-    player_id: socket.id,
-    name: `Player ${socket.id}`,
-    session_id: 1,
-    balance: 1000,
-    cell_id: 1,
-    color: getRandomColor()
-  };
-  
-  const sql = `INSERT INTO players SET ?`;
-  
-  connection.query(sql, playerData, (err, results, fields) => {
-    if (err) {
-      console.error('Помилка запиту до бази даних:', err);
-      return;
-    }
-    players.push(playerData);
-    io.emit('placeNewPlayer', players);
-  });
-  
+  handleNewPlayerConnection(socket.id);
 
   socket.on('getBoardCells', () => {
     connection.query('SELECT * FROM board_cells', (err, results, fields) => {
@@ -92,4 +71,28 @@ function getRandomColor() {
   }
   
   return color;
+}
+
+function handleNewPlayerConnection(socketId: string) {
+  console.log('Клієнт підключений до WebSocket сервера');
+
+  const playerData = {
+    player_id: socketId,
+    name: `Player ${socketId}`,
+    session_id: 1,
+    balance: 1000,
+    cell_id: 1,
+    color: getRandomColor()
+  };
+
+  const sql = `INSERT INTO players SET ?`;
+
+  connection.query(sql, playerData, (err, results, fields) => {
+    if (err) {
+      console.error('Помилка запиту до бази даних:', err);
+      return;
+    }
+    players.push(playerData);
+    io.emit('placeNewPlayer', players);
+  });
 }
