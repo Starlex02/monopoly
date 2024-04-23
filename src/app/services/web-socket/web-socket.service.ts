@@ -24,7 +24,7 @@ export class WebSocketService {
     });
   }
 
-  emit(func: string, message?: string) {
+  emit(func: string, message?: any) {
     if (message !== undefined) {
       this.socket.emit(func, message);
     } else {
@@ -47,6 +47,14 @@ export class WebSocketService {
   placeNewPlayer() {
     return new Observable<any>(observer => {
       this.socket.on('placeNewPlayer', (data: any) => {
+        observer.next(data);
+      });
+    });
+  }
+
+  showDice() {
+    return new Observable<any>(observer => {
+      this.socket.on('showDice', (data: any) => {
         observer.next(data);
       });
     });

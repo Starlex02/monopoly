@@ -20,7 +20,6 @@ export class BoardComponent {
     }); 
   }
 
-
   showPopup(cell: any) {
     this.popupData = cell;
     if (this.popupData.type === 'monopoly') {

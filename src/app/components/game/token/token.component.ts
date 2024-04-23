@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 
 @Component({
   selector: 'player-token',
@@ -13,7 +14,7 @@ export class TokenComponent {
   }
 
   setStartPosition() {
-    let cell = document.getElementById('cell-1');
+    let cell = document.getElementById(`cell-${this.playerInfo.cell_id}`);
     if (cell) {
       let cellPos = cell.getBoundingClientRect();
       this.playerInfo.x = cellPos.left + cellPos.width / 2 - 5 + 'px';
