@@ -1,6 +1,7 @@
 import express from 'express';
 import { Server } from 'socket.io';
 import mysql from 'mysql';
+import fs from 'fs';
 
 const app = express();
 
@@ -104,7 +105,27 @@ io.sockets.on('connection', (socket: any) => {
             const targetSocket = io.sockets.sockets.get(socketId);
         
             if (targetSocket) {
-              targetSocket.emit('showDice', socketId);
+              fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+                if (err) {
+                  console.error('Помилка читання файлу:', err);
+                  return;
+              }
+          
+              try {
+                  // Розпарсимо JSON дані
+                  const popupInfo = JSON.parse(data);
+          
+                  // Отримаємо дані для конкретної дії (throwDice)
+                  const throwDiceData = popupInfo.throwDice;
+          
+                  // Викликаємо функцію, яка передає дані на клієнт
+                  targetSocket.emit('showDice', throwDiceData);
+              } catch (parseError) {
+                  console.error('Помилка парсингу JSON:', parseError);
+              }
+              });
+
+              // targetSocket.emit('showDice', socketId);
             } else {
               console.error(`Сокет з ID ${socketId} не знайдено`);
             }
@@ -135,7 +156,26 @@ io.sockets.on('connection', (socket: any) => {
         const targetSocket = io.sockets.sockets.get(socketId);
   
         if (targetSocket) {
-          targetSocket.emit('showDice', socketId);
+            fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+              if (err) {
+                console.error('Помилка читання файлу:', err);
+                return;
+            }
+        
+            try {
+                // Розпарсимо JSON дані
+                const popupInfo = JSON.parse(data);
+        
+                // Отримаємо дані для конкретної дії (throwDice)
+                const throwDiceData = popupInfo.throwDice;
+        
+                // Викликаємо функцію, яка передає дані на клієнт
+                targetSocket.emit('showDice', throwDiceData);
+            } catch (parseError) {
+                console.error('Помилка парсингу JSON:', parseError);
+            }
+            });
+          // targetSocket.emit('showDice', socketId);
         } else {
           console.error(`Сокет з ID ${socketId} не знайдено`);
         }

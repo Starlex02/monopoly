@@ -11,11 +11,11 @@ export class DiceComponent {
   
   constructor( private webSocketService: WebSocketService ) { }
 
-  ngOnInit() {    
-    this.webSocketService.showDice().subscribe((message: []) => {
-      this.showDice = true;
-    }); 
-  }
+  // ngOnInit() {    
+  //   this.webSocketService.showDice().subscribe((message: []) => {
+  //     this.showDice = true;
+  //   }); 
+  // }
 
   rollDice() {
     const random = Math.floor(Math.random() * 12) + 1;

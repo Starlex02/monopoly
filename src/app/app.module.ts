@@ -11,6 +11,7 @@ import { PlayerCardComponent } from './components/game/player-card/player-card.c
 import { TokenComponent } from './components/game/token/token.component';
 import { WebSocketService } from './services/web-socket/web-socket.service';
 import { DiceComponent } from "./components/game/dice/dice.component";
+import { PopupInfoComponent } from "./components/game/popup-info/popup-info.component";
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { DiceComponent } from "./components/game/dice/dice.component";
     PlayersComponent,
     PlayerCardComponent,
     TokenComponent,
-    DiceComponent
+    DiceComponent,
+    PopupInfoComponent
   ],
   imports: [
     BrowserModule,
