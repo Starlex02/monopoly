@@ -5,15 +5,15 @@ import fs from 'fs';
 
 const app = express();
 
+// Ініціалізація сервера
 const server = app.listen(4201, "0.0.0.0", () => {
   console.log("server is listening on port 4201");
 });
 
-// let players: any[] = [];
-
+// Ініціалізація доступів до websocket
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:4200", // Встановіть URL вашого клієнта Angular
+    origin: "http://localhost:4200",
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
@@ -42,6 +42,7 @@ connection.connect((err: any) => {
 io.sockets.on('connection', (socket: any) => {
   handleNewPlayerConnection(socket.id);
 
+  // Ініціалізація дошки
   socket.on('getBoardCells', () => {
     connection.query('SELECT * FROM board_cells ORDER BY field_order', (err, results, fields) => {
       if (err) {
@@ -52,6 +53,7 @@ io.sockets.on('connection', (socket: any) => {
     });
   });
 
+  // Запис нових координат користувача до бази
   socket.on('moveToken', (message: any) => {
     connection.query('SELECT cell_id FROM players WHERE player_id = ?', [socket.id], (err, results, fields) => {
       if (err) {
@@ -59,8 +61,10 @@ io.sockets.on('connection', (socket: any) => {
         return;
       }
 
+      // Вираховування нової позиції з врахуванням нового кола
       const newPos = results[0]['cell_id'] + message > 40 ? results[0]['cell_id'] + message - 40  : results[0]['cell_id'] + message;
 
+      // Запис нової позицій гравця
       connection.query('UPDATE players SET cell_id = ? WHERE player_id = ?', [newPos, socket.id], (err, results, fields) => {
         if (err) {
           console.error('Помилка оновлення запису у таблиці players:', err);
@@ -68,14 +72,18 @@ io.sockets.on('connection', (socket: any) => {
         }
         console.log(`Гравець з ID ${socket.id} передвинувся до поля ${results[0] + message}.`);
 
+        // Обрання всіх гравців
         connection.query('SELECT * FROM players WHERE session_id = ?', [1], (err, results, fields) => {
           if (err) {
             console.error('Помилка отримання всіх гравців данної сесії:', err);
             return;
           }
           
+          // Відправка оновленних даних гравців
+          // TODO Оновлення відразу всіх гравців, краще оновлювати одного
           io.emit('placeNewPlayer', results);
 
+          // Отримання порядок ходу з бази
           connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
             if (err) {
               console.error('Помилка отримання всіх гравців данної сесії:', err);
@@ -95,6 +103,7 @@ io.sockets.on('connection', (socket: any) => {
 
             turnOrder = turnOrder.join(',');
 
+            // Оновлення порядку хочу
             connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
               if (err) {
                 console.error('Помилка оновлення запису у таблиці game_sessions:', err);
@@ -102,8 +111,10 @@ io.sockets.on('connection', (socket: any) => {
               }
             });
   
+            // Знаходження сокету гравця
             const targetSocket = io.sockets.sockets.get(socketId);
         
+            // Відправка popupInfo
             if (targetSocket) {
               fs.readFile('popupInfo.json', 'utf8', (err, data) => {
                 if (err) {
@@ -135,12 +146,15 @@ io.sockets.on('connection', (socket: any) => {
     });
   });
 
+
+  // Отримання всіх гравців
   connection.query('SELECT * FROM players WHERE session_id = ?', [1], (err, results, fields) => {
     if (err) {
       console.error('Помилка отримання всіх гравців данної сесії:', err);
       return;
     }
 
+    // Початок гри
     if (results.length === 4) {
       connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
         if (err) {
@@ -175,7 +189,6 @@ io.sockets.on('connection', (socket: any) => {
                 console.error('Помилка парсингу JSON:', parseError);
             }
             });
-          // targetSocket.emit('showDice', socketId);
         } else {
           console.error(`Сокет з ID ${socketId} не знайдено`);
         }
@@ -184,6 +197,7 @@ io.sockets.on('connection', (socket: any) => {
     }
   });
 
+  // Вихід гравця
   socket.on('disconnect', () => {
     connection.query(`DELETE FROM players WHERE player_id = '${socket.id}'`);
 
