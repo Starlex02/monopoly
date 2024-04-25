@@ -44,12 +44,210 @@ io.sockets.on('connection', (socket: any) => {
 
   // Ініціалізація дошки
   socket.on('getBoardCells', () => {
-    connection.query('SELECT * FROM board_cells ORDER BY field_order', (err, results, fields) => {
+    connection.query(`
+    SELECT 
+      cell.*,
+      players.color AS owner_color,
+      CASE 
+          WHEN player_owner.property_level = 'base_rent' THEN cell.base_rent
+          WHEN player_owner.property_level = 'rent_0' THEN cell.rent_0
+          WHEN player_owner.property_level = 'rent_1' THEN cell.rent_1
+          WHEN player_owner.property_level = 'rent_2' THEN cell.rent_2
+          WHEN player_owner.property_level = 'rent_3' THEN cell.rent_3
+          WHEN player_owner.property_level = 'rent_4' THEN cell.rent_4
+          WHEN player_owner.property_level = 'rent_5' THEN cell.rent_5
+          ELSE 0 
+      END AS rent
+    FROM 
+        board_cells AS cell
+    LEFT JOIN 
+        player_property_ownership AS player_owner ON cell.id = player_owner.cell_id
+    LEFT JOIN 
+        players ON player_owner.player_id = players.player_id
+    ORDER BY 
+        cell.field_order;`, (err, results, fields) => {
       if (err) {
         console.error('Помилка запиту до бази даних:', err);
         return;
       }
       socket.emit('getBoardCells', results);
+    });
+  });
+
+  // Купівля поля
+  socket.on('buyCell', (message: any) => {
+    connection.query('UPDATE players p JOIN board_cells cell ON p.cell_id = cell.id SET p.balance = p.balance - cell.cost WHERE p.player_id = ? AND p.balance - cell.cost >= 0', [socket.id], (err, results, fields) => {
+      if (err) {
+        console.error('Помилка оновлення балансу користувача:', err);
+        return;
+      }
+
+      // Обрання всіх гравців
+      connection.query('SELECT * FROM players WHERE session_id = ?', [1], (err, results, fields) => {
+        if (err) {
+          console.error('Помилка отримання всіх гравців данної сесії:', err);
+          return;
+        }
+        
+        // Відправка оновленних даних гравців
+        // TODO Оновлення відразу всіх гравців, краще оновлювати одного
+        io.emit('placeNewPlayer', results);
+      });
+
+      connection.query("INSERT INTO player_property_ownership (player_id, cell_id, property_level) SELECT ?, p.cell_id, 'base_rent' FROM players p WHERE p.player_id = ?", [socket.id, socket.id], (err, results, fields) => {
+        if (err) {
+          console.error('Помилка оновлення власності гравця:', err);
+          return;
+        }
+
+        connection.query(`
+          SELECT 
+            cell.*,
+            players.color AS owner_color,
+            CASE 
+                WHEN player_owner.property_level = 'base_rent' THEN cell.base_rent
+                WHEN player_owner.property_level = 'rent_0' THEN cell.rent_0
+                WHEN player_owner.property_level = 'rent_1' THEN cell.rent_1
+                WHEN player_owner.property_level = 'rent_2' THEN cell.rent_2
+                WHEN player_owner.property_level = 'rent_3' THEN cell.rent_3
+                WHEN player_owner.property_level = 'rent_4' THEN cell.rent_4
+                WHEN player_owner.property_level = 'rent_5' THEN cell.rent_5
+                ELSE 0 
+            END AS rent
+          FROM 
+              board_cells AS cell
+          LEFT JOIN 
+              player_property_ownership AS player_owner ON cell.id = player_owner.cell_id
+          LEFT JOIN 
+              players ON player_owner.player_id = players.player_id
+          ORDER BY 
+              cell.field_order;`, 
+        (err, results, fields) => {
+          if (err) {
+            console.error('Помилка оновлення власності гравця:', err);
+            return;
+          }
+  
+          io.emit('getBoardCells', results);
+
+          // Отримання порядок ходу з бази
+          connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
+            if (err) {
+              console.error('Помилка отримання всіх гравців данної сесії:', err);
+              return;
+            }
+
+            // Отримати поточний порядок ходу
+            let turnOrder = results[0].turn_order || '';
+            turnOrder = turnOrder.split(',');
+
+            const firstElement = turnOrder.shift();
+
+            // Додавання збереженого першого елемента в кінець масиву
+            turnOrder.push(firstElement);
+
+            const socketId = turnOrder[0];
+
+            turnOrder = turnOrder.join(',');
+
+            // Оновлення порядку хочу
+            connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
+              if (err) {
+                console.error('Помилка оновлення запису у таблиці game_sessions:', err);
+                return;
+              }
+            });
+
+            // Знаходження сокету гравця
+            const targetSocket = io.sockets.sockets.get(socketId);
+        
+            // Відправка popupInfo
+            if (targetSocket) {
+              fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+                if (err) {
+                  console.error('Помилка читання файлу:', err);
+                  return;
+              }
+          
+              try {
+                  // Розпарсимо JSON дані
+                  const popupInfo = JSON.parse(data);
+          
+                  // Отримаємо дані для конкретної дії (throwDice)
+                  const throwDiceData = popupInfo.throwDice;
+          
+                  // Викликаємо функцію, яка передає дані на клієнт
+                  targetSocket.emit('showPlayerInfo', throwDiceData);
+              } catch (parseError) {
+                  console.error('Помилка парсингу JSON:', parseError);
+              }
+              });
+            } else {
+              console.error(`Сокет з ID ${socketId} не знайдено`);
+            }
+          });
+        });
+      });
+    });
+  });
+
+  // Перехід до наступного гравця
+  socket.on('nextTurn', (message: any) => {
+    // Отримання порядок ходу з бази
+    connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
+      if (err) {
+        console.error('Помилка отримання всіх гравців данної сесії:', err);
+        return;
+      }
+
+      // Отримати поточний порядок ходу
+      let turnOrder = results[0].turn_order || '';
+      turnOrder = turnOrder.split(',');
+
+      const firstElement = turnOrder.shift();
+
+      // Додавання збереженого першого елемента в кінець масиву
+      turnOrder.push(firstElement);
+
+      const socketId = turnOrder[0];
+
+      turnOrder = turnOrder.join(',');
+
+      // Оновлення порядку хочу
+      connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
+        if (err) {
+          console.error('Помилка оновлення запису у таблиці game_sessions:', err);
+          return;
+        }
+      });
+
+      // Знаходження сокету гравця
+      const targetSocket = io.sockets.sockets.get(socketId);
+  
+      // Відправка popupInfo
+      if (targetSocket) {
+        fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+          if (err) {
+            console.error('Помилка читання файлу:', err);
+            return;
+        }
+    
+        try {
+            // Розпарсимо JSON дані
+            const popupInfo = JSON.parse(data);
+    
+            // Отримаємо дані для конкретної дії (throwDice)
+            const throwDiceData = popupInfo.throwDice;
+    
+            // Викликаємо функцію, яка передає дані на клієнт
+            targetSocket.emit('showPlayerInfo', throwDiceData);
+        } catch (parseError) {
+            console.error('Помилка парсингу JSON:', parseError);
+        }
+        });
+      } else {
+        console.error(`Сокет з ID ${socketId} не знайдено`);
+      }
     });
   });
 
@@ -70,7 +268,7 @@ io.sockets.on('connection', (socket: any) => {
           console.error('Помилка оновлення запису у таблиці players:', err);
           return;
         }
-        console.log(`Гравець з ID ${socket.id} передвинувся до поля ${results[0] + message}.`);
+        console.log(`Гравець з ID ${socket.id} передвинувся до поля ${newPos}.`);
 
         // Обрання всіх гравців
         connection.query('SELECT * FROM players WHERE session_id = ?', [1], (err, results, fields) => {
@@ -83,39 +281,13 @@ io.sockets.on('connection', (socket: any) => {
           // TODO Оновлення відразу всіх гравців, краще оновлювати одного
           io.emit('placeNewPlayer', results);
 
-          // Отримання порядок ходу з бази
-          connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
+          connection.query('SELECT cell.type, pl_owner.player_id FROM board_cells cell LEFT JOIN player_property_ownership pl_owner on cell.id = pl_owner.cell_id WHERE cell.id = ?', [newPos], (err, results, fields) => {
             if (err) {
-              console.error('Помилка отримання всіх гравців данної сесії:', err);
+              console.error('Помилка отримання власності поля:', err);
               return;
             }
 
-            // Отримати поточний порядок ходу
-            let turnOrder = results[0].turn_order || '';
-            turnOrder = turnOrder.split(',');
-
-            const firstElement = turnOrder.shift();
-    
-            // Додавання збереженого першого елемента в кінець масиву
-            turnOrder.push(firstElement);
-
-            const socketId = turnOrder[0];
-
-            turnOrder = turnOrder.join(',');
-
-            // Оновлення порядку хочу
-            connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
-              if (err) {
-                console.error('Помилка оновлення запису у таблиці game_sessions:', err);
-                return;
-              }
-            });
-  
-            // Знаходження сокету гравця
-            const targetSocket = io.sockets.sockets.get(socketId);
-        
-            // Відправка popupInfo
-            if (targetSocket) {
+            if(results[0]['type'] === 'monopoly' && !results[0]['player_id']) {
               fs.readFile('popupInfo.json', 'utf8', (err, data) => {
                 if (err) {
                   console.error('Помилка читання файлу:', err);
@@ -127,18 +299,70 @@ io.sockets.on('connection', (socket: any) => {
                   const popupInfo = JSON.parse(data);
           
                   // Отримаємо дані для конкретної дії (throwDice)
-                  const throwDiceData = popupInfo.throwDice;
+                  const buyCellData = popupInfo.buyCell;
           
                   // Викликаємо функцію, яка передає дані на клієнт
-                  targetSocket.emit('showDice', throwDiceData);
+                  socket.emit('showPlayerInfo', buyCellData);
               } catch (parseError) {
                   console.error('Помилка парсингу JSON:', parseError);
               }
               });
-
-              // targetSocket.emit('showDice', socketId);
-            } else {
-              console.error(`Сокет з ID ${socketId} не знайдено`);
+            } else if (results[0]['type'] !== 'monopoly') {
+              connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
+                if (err) {
+                  console.error('Помилка отримання всіх гравців данної сесії:', err);
+                  return;
+                }
+          
+                // Отримати поточний порядок ходу
+                let turnOrder = results[0].turn_order || '';
+                turnOrder = turnOrder.split(',');
+          
+                const firstElement = turnOrder.shift();
+          
+                // Додавання збереженого першого елемента в кінець масиву
+                turnOrder.push(firstElement);
+          
+                const socketId = turnOrder[0];
+          
+                turnOrder = turnOrder.join(',');
+          
+                // Оновлення порядку хочу
+                connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
+                  if (err) {
+                    console.error('Помилка оновлення запису у таблиці game_sessions:', err);
+                    return;
+                  }
+                });
+          
+                // Знаходження сокету гравця
+                const targetSocket = io.sockets.sockets.get(socketId);
+            
+                // Відправка popupInfo
+                if (targetSocket) {
+                  fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+                    if (err) {
+                      console.error('Помилка читання файлу:', err);
+                      return;
+                  }
+              
+                  try {
+                      // Розпарсимо JSON дані
+                      const popupInfo = JSON.parse(data);
+              
+                      // Отримаємо дані для конкретної дії (throwDice)
+                      const throwDiceData = popupInfo.throwDice;
+              
+                      // Викликаємо функцію, яка передає дані на клієнт
+                      targetSocket.emit('showPlayerInfo', throwDiceData);
+                  } catch (parseError) {
+                      console.error('Помилка парсингу JSON:', parseError);
+                  }
+                  });
+                } else {
+                  console.error(`Сокет з ID ${socketId} не знайдено`);
+                }
+              });
             }
           });
         });
@@ -184,7 +408,7 @@ io.sockets.on('connection', (socket: any) => {
                 const throwDiceData = popupInfo.throwDice;
         
                 // Викликаємо функцію, яка передає дані на клієнт
-                targetSocket.emit('showDice', throwDiceData);
+                targetSocket.emit('showPlayerInfo', throwDiceData);
             } catch (parseError) {
                 console.error('Помилка парсингу JSON:', parseError);
             }
@@ -199,6 +423,8 @@ io.sockets.on('connection', (socket: any) => {
 
   // Вихід гравця
   socket.on('disconnect', () => {
+    connection.query(`DELETE FROM player_property_ownership WHERE player_id = '${socket.id}'`);
+
     connection.query(`DELETE FROM players WHERE player_id = '${socket.id}'`);
 
     connection.query('SELECT * FROM players WHERE session_id = ?', [1], (err, results, fields) => {

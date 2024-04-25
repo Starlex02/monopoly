@@ -52,9 +52,9 @@ export class WebSocketService {
     });
   }
 
-  showDice() {
+  showPlayerInfo() {
     return new Observable<any>(observer => {
-      this.socket.on('showDice', (data: any) => {
+      this.socket.on('showPlayerInfo', (data: any) => {
         observer.next(data);
       });
     });

@@ -8,5 +8,29 @@
                 "action" : "throwDice"
             }
         ]
+    },
+    "buyCell" : {
+        "title" : "Купуємо?",
+        "text" : "Купіть чи скасуйте купівлю цього поля",
+        "buttons" : [
+            {
+                "label" : "Купити поле",
+                "action" : "buyCell"
+            },
+            {
+                "label" : "Скасувати",
+                "action" : "nextTurn"
+            }
+        ]
+    },
+    "rentCell" : {
+        "title" : "Оплатити",
+        "text" : "Оплатіть ваші витрати",
+        "buttons" : [
+            {
+                "label" : "Оплатити",
+                "action" : "rentCell"
+            }
+        ]
     }
 }
