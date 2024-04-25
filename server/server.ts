@@ -2,32 +2,18 @@ import express from 'express';
 import { Server } from 'socket.io';
 import mysql from 'mysql';
 import fs from 'fs';
+import config from './config';
 
 const app = express();
 
 // Ініціалізація сервера
-const server = app.listen(4201, "0.0.0.0", () => {
-  console.log("server is listening on port 4201");
-});
+const server = app.listen(config.server.port, "0.0.0.0");
 
 // Ініціалізація доступів до websocket
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:4200",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["my-custom-header"],
-    credentials: true
-  }
-});
-
+const io = new Server(server, config.websocket);
 
 // Параметри підключення до бази даних MySQL
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'monopoly',
-  password: 'password',
-  database: 'monopoly'
-});
+const connection = mysql.createConnection(config.database);
 
 // Підключення до бази даних
 connection.connect((err: any) => {
@@ -37,6 +23,29 @@ connection.connect((err: any) => {
   }
   console.log('Підключено до бази даних MySQL');
 });
+
+let popupInfoData: any = null;
+
+loadPopupInfo(() => {
+  console.log('Дані popupInfo успішно завантажено');
+});
+
+function loadPopupInfo(callback: () => void) {
+  fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+      if (err) {
+          console.error('Помилка читання файлу:', err);
+          return;
+      }
+
+      try {
+          // Розпарсимо JSON дані та збережемо їх у глобальній змінній
+          popupInfoData = JSON.parse(data);
+          callback(); // Викликати зворотний виклик після завершення завантаження
+      } catch (parseError) {
+          console.error('Помилка парсингу JSON:', parseError);
+      }
+  });
+}
 
 // Обробник події підключення нового клієнта до WebSocket сервера
 io.sockets.on('connection', (socket: any) => {
@@ -63,7 +72,7 @@ io.sockets.on('connection', (socket: any) => {
           return;
         }
 
-        initBoard(socket);
+        // initBoard(socket);
 
         nextTurn();
       });
@@ -183,45 +192,19 @@ io.sockets.on('connection', (socket: any) => {
             }
 
             if(results[0]['type'] === 'monopoly' && !results[0]['player_id']) {
-              fs.readFile('popupInfo.json', 'utf8', (err, data) => {
-                if (err) {
-                  console.error('Помилка читання файлу:', err);
-                  return;
-                }
-          
-                try {
-                    // Розпарсимо JSON дані
-                    const popupInfo = JSON.parse(data);
-            
-                    // Отримаємо дані для конкретної дії (throwDice)
-                    const buyCellData = popupInfo.buyCell;
-            
-                    // Викликаємо функцію, яка передає дані на клієнт
-                    socket.emit('showPlayerInfo', buyCellData);
-                } catch (parseError) {
-                    console.error('Помилка парсингу JSON:', parseError);
-                }
-              });
+              if (popupInfoData) {
+                const buyCellData = popupInfoData.buyCell;
+                socket.emit('showPlayerInfo', buyCellData);
+              } else {
+                  console.error('Дані popupInfo не завантажені');
+              }
             } else if (results[0]['type'] == 'monopoly' && results[0]['player_id'] !== socket.id) {
-              fs.readFile('popupInfo.json', 'utf8', (err, data) => {
-                if (err) {
-                  console.error('Помилка читання файлу:', err);
-                  return;
-                }
-          
-                try {
-                    // Розпарсимо JSON дані
-                    const popupInfo = JSON.parse(data);
-            
-                    // Отримаємо дані для конкретної дії (throwDice)
-                    const rentCellData = popupInfo.rentCell;
-            
-                    // Викликаємо функцію, яка передає дані на клієнт
-                    socket.emit('showPlayerInfo', rentCellData);
-                } catch (parseError) {
-                    console.error('Помилка парсингу JSON:', parseError);
-                }
-              });
+              if (popupInfoData) {
+                const rentCellData = popupInfoData.rentCell;
+                socket.emit('showPlayerInfo', rentCellData);
+              } else {
+                  console.error('Дані popupInfo не завантажені');
+              }
             } else if (results[0]['type'] !== 'monopoly') {
               nextTurn();
             } else {
@@ -257,25 +240,12 @@ io.sockets.on('connection', (socket: any) => {
         const targetSocket = io.sockets.sockets.get(socketId);
   
         if (targetSocket) {
-            fs.readFile('popupInfo.json', 'utf8', (err, data) => {
-              if (err) {
-                console.error('Помилка читання файлу:', err);
-                return;
-            }
-        
-            try {
-                // Розпарсимо JSON дані
-                const popupInfo = JSON.parse(data);
-        
-                // Отримаємо дані для конкретної дії (throwDice)
-                const throwDiceData = popupInfo.throwDice;
-        
-                // Викликаємо функцію, яка передає дані на клієнт
-                targetSocket.emit('showPlayerInfo', throwDiceData);
-            } catch (parseError) {
-                console.error('Помилка парсингу JSON:', parseError);
-            }
-            });
+          if (popupInfoData) {
+            const throwDiceData = popupInfoData.throwDice;
+            targetSocket.emit('showPlayerInfo', throwDiceData);
+          } else {
+              console.error('Дані popupInfo не завантажені');
+          }
         } else {
           console.error(`Сокет з ID ${socketId} не знайдено`);
         }
@@ -334,128 +304,46 @@ function handleNewPlayerConnection(socketId: string) {
   });
 }
 
-function placePlayer() {
-  connection.query('SELECT * FROM players WHERE session_id = ?', [1], (err, results, fields) => {
-    if (err) {
-      console.error('Помилка отримання всіх гравців данної сесії:', err);
-      return;
-    }
-    
-    io.emit('placeNewPlayer', results);
-  });
+function rotateTurnOrder(turnOrder: string): string {
+  const turnOrderArr: any[] = turnOrder.split(',');
+  const firstElement = turnOrderArr.shift();
+  turnOrderArr.push(firstElement);
+  return turnOrderArr.join(',');
 }
 
-function addPlayerToTurnOrder(socketId: string) {
-  // Отримати поточний порядок ходу з бази даних
-  connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
-    if (err) {
-      console.error('Помилка запиту до бази даних:', err);
-      return;
-    }
-
-    // Отримати поточний порядок ходу
-    let turnOrder = results[0].turn_order || '';
-
-    // Додати новий ID користувача до порядку ходу
-    turnOrder += (turnOrder ? ',' : '') + socketId;
-
-    // Оновити запис у таблиці game_sessions з новим порядком ходу
-    connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
-      if (err) {
-        console.error('Помилка оновлення запису у таблиці game_sessions:', err);
-        return;
+function sendPopup (socket: any) {
+  if (socket) {
+      // Перевірити, чи дані popupInfo вже були завантажені
+      if (popupInfoData) {
+          const throwDiceData = popupInfoData.throwDice;
+          socket.emit('showPlayerInfo', throwDiceData);
+      } else {
+          console.error('Дані popupInfo не завантажені');
       }
-      console.log(`Гравець з ID ${socketId} доданий до порядку ходу.`);
-    });
-  });
+  } else {
+      console.error(`Сокет не знайдено`);
+  }
 }
 
-function removePlayerFromTurnOrder(socketId: string) {
-  // Отримати поточний порядок ходу з бази даних
-  connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
-    if (err) {
-      console.error('Помилка запиту до бази даних:', err);
-      return;
+function nextTurn (){
+  getTurnOrderFromDatabase(
+    (turnOrder: string) => {
+      const newTurnOrder = rotateTurnOrder(turnOrder);
+      
+      updateTurnOrderInDatabase(newTurnOrder);
+      
+      const socketId = newTurnOrder.split(',')[0];
+
+      // Знаходження сокету гравця
+      const targetSocket = io.sockets.sockets.get(socketId);
+
+      sendPopup(targetSocket);
     }
-
-    // Отримати поточний порядок ходу
-    let turnOrder = results[0].turn_order || '';
-
-    // Видалити ID користувача з порядку ходу, якщо він є
-    turnOrder = turnOrder.split(',').filter((id: string) => id !== socketId).join(',');
-
-    // Оновити запис у таблиці game_sessions з оновленим порядком ходу
-    connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
-      if (err) {
-        console.error('Помилка оновлення запису у таблиці game_sessions:', err);
-        return;
-      }
-      console.log(`Гравець з ID ${socketId} видалений з порядку ходу.`);
-    });
-  });
+  );
 }
 
-function nextTurn(){
-  // Отримання порядок ходу з бази
-  connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
-    if (err) {
-      console.error('Помилка отримання всіх гравців данної сесії:', err);
-      return;
-    }
-
-    // Отримати поточний порядок ходу
-    let turnOrder = results[0].turn_order || '';
-    turnOrder = turnOrder.split(',');
-
-    const firstElement = turnOrder.shift();
-
-    // Додавання збереженого першого елемента в кінець масиву
-    turnOrder.push(firstElement);
-
-    const socketId = turnOrder[0];
-
-    turnOrder = turnOrder.join(',');
-
-    // Оновлення порядку хочу
-    connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
-      if (err) {
-        console.error('Помилка оновлення запису у таблиці game_sessions:', err);
-        return;
-      }
-    });
-
-    // Знаходження сокету гравця
-    const targetSocket = io.sockets.sockets.get(socketId);
-
-    // Відправка popupInfo
-    if (targetSocket) {
-      fs.readFile('popupInfo.json', 'utf8', (err, data) => {
-        if (err) {
-          console.error('Помилка читання файлу:', err);
-          return;
-      }
-  
-      try {
-          // Розпарсимо JSON дані
-          const popupInfo = JSON.parse(data);
-  
-          // Отримаємо дані для конкретної дії (throwDice)
-          const throwDiceData = popupInfo.throwDice;
-  
-          // Викликаємо функцію, яка передає дані на клієнт
-          targetSocket.emit('showPlayerInfo', throwDiceData);
-      } catch (parseError) {
-          console.error('Помилка парсингу JSON:', parseError);
-      }
-      });
-    } else {
-      console.error(`Сокет з ID ${socketId} не знайдено`);
-    }
-  });
-}
-
-function initBoard (socket: any) {
-  connection.query(`
+function getBoardData(successCallback: (results: any) => void, errorCallback: (err: any) => void) {
+  const query = `
     SELECT 
       cell.*,
       players.color AS owner_color,
@@ -476,11 +364,95 @@ function initBoard (socket: any) {
     LEFT JOIN 
         players ON player_owner.player_id = players.player_id
     ORDER BY 
-        cell.field_order;`, (err, results, fields) => {
-      if (err) {
-        console.error('Помилка запиту до бази даних:', err);
-        return;
-      }
+        cell.field_order;
+  `;
+
+  executeQuery(query, [], successCallback, errorCallback);
+}
+
+function initBoard (socket: any) {
+  getBoardData(
+    (results: any) => {
       socket.emit('getBoardCells', results);
-    });
+    },
+    (err: any) => {
+      console.error('Помилка отримання даних дошки:', err);
+    }
+  );
+}
+
+function getPlayersData(successCallback: (results: any) => void, errorCallback: (err: any) => void) {
+  const query = `
+    SELECT 
+      * 
+    FROM 
+      players 
+    WHERE session_id = ?
+  `;
+
+  executeQuery(query, [1], successCallback, errorCallback);
+}
+
+function placePlayer() {
+  getPlayersData(
+    (results: any) => {
+      io.emit('placeNewPlayer', results);
+    },
+    (err: any) => {
+      console.error('Помилка отримання гравців:', err)
+    }
+  );
+}
+
+function removePlayerFromTurnOrder(socketId: string) {
+  getTurnOrderFromDatabase(
+    (turnOrder: string) => {
+      const updatedTurnOrder = turnOrder.split(',').filter((id: string) => id !== socketId).join(',');
+
+      updateTurnOrderInDatabase(updatedTurnOrder);
+    }
+  );
+}
+
+function getTurnOrderFromDatabase(callback: (turnOrder: string) => void) {
+  executeQuery(
+    'SELECT turn_order FROM game_sessions WHERE session_id = ?', 
+    [1], 
+    (results: any) => {
+        const turnOrder = results[0].turn_order || '';
+        callback(turnOrder);
+    },
+    (err: any) => {
+      console.log('Помилка отримання черговості ходу: ', err)
+    }
+  );
+}
+
+function updateTurnOrderInDatabase(newTurnOrder: string) {
+  executeQuery(
+      'UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', 
+      [newTurnOrder, 1], 
+      () => {}, 
+      (err: any) => console.log('Помилка оновлення черговості ходів:', err)
+  );
+}
+
+function addPlayerToTurnOrder(socketId: string) {
+  getTurnOrderFromDatabase(
+    (turnOrder: string) => {
+      const updatedTurnOrder = turnOrder + (turnOrder ? ',' : '') + socketId;
+
+      updateTurnOrderInDatabase(updatedTurnOrder);
+    }
+  );
+}
+
+function executeQuery(sqlQuery: string, params: any, successCallback: any, errorCallback: any) {
+  connection.query(sqlQuery, params, (err, results, fields) => {
+      if (err) {
+          errorCallback(err);
+          return;
+      }
+      successCallback(results);
+  });
 }
