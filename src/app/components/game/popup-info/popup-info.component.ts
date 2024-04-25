@@ -28,10 +28,12 @@ export class PopupInfoComponent {
       case 'nextTurn' :
         this.nextTurn();
         break; 
-      case 'buyCell' : {
+      case 'buyCell' : 
         this.buyCell();
         break;
-      }
+      case 'rentCell' : 
+        this.rentCell();
+        break;
     }
 
     this.showPopup = false;
@@ -49,5 +51,9 @@ export class PopupInfoComponent {
 
   buyCell() {
     this.webSocketService.emit('buyCell');
+  }
+
+  rentCell() {
+    this.webSocketService.emit('rentCell');
   }
 }

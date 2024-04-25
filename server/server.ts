@@ -191,6 +191,194 @@ io.sockets.on('connection', (socket: any) => {
     });
   });
 
+  socket.on('rentCell', (message: any) => {
+    connection.query(`
+    UPDATE players AS p
+    JOIN player_property_ownership AS ppo ON p.cell_id = ppo.cell_id
+    JOIN board_cells AS bc ON ppo.cell_id = bc.id
+    SET p.balance = (
+        CASE
+            WHEN p.balance - (
+                CASE ppo.property_level
+                    WHEN 'base_rent' THEN bc.base_rent
+                    WHEN 'rent_0' THEN bc.rent_0
+                    WHEN 'rent_1' THEN bc.rent_1
+                    WHEN 'rent_2' THEN bc.rent_2
+                    WHEN 'rent_3' THEN bc.rent_3
+                    WHEN 'rent_4' THEN bc.rent_4
+                    WHEN 'rent_5' THEN bc.rent_5
+                    ELSE 0
+                END
+            ) < 0 THEN 0
+            ELSE p.balance - (
+                CASE ppo.property_level
+                    WHEN 'base_rent' THEN bc.base_rent
+                    WHEN 'rent_0' THEN bc.rent_0
+                    WHEN 'rent_1' THEN bc.rent_1
+                    WHEN 'rent_2' THEN bc.rent_2
+                    WHEN 'rent_3' THEN bc.rent_3
+                    WHEN 'rent_4' THEN bc.rent_4
+                    WHEN 'rent_5' THEN bc.rent_5
+                    ELSE 0
+                END
+            )
+        END
+    )
+    WHERE p.player_id = ?;
+    `, [socket.id], (err, results, fields) => {
+        if (err) {
+          console.error('Помилка переводу знімання балансу:', err);
+          return;
+        }
+      });
+
+      connection.query(`
+      UPDATE players AS p1
+      JOIN player_property_ownership AS ppo ON p1.cell_id = ppo.cell_id
+      JOIN board_cells AS bc ON ppo.cell_id = bc.id
+      JOIN players AS p2 ON ppo.player_id = p2.player_id
+      SET p2.balance = p2.balance + (
+          CASE ppo.property_level
+              WHEN 'base_rent' THEN bc.base_rent
+              WHEN 'rent_0' THEN bc.rent_0
+              WHEN 'rent_1' THEN bc.rent_1
+              WHEN 'rent_2' THEN bc.rent_2
+              WHEN 'rent_3' THEN bc.rent_3
+              WHEN 'rent_4' THEN bc.rent_4
+              WHEN 'rent_5' THEN bc.rent_5
+              ELSE 0
+          END
+      )
+      WHERE p1.player_id = ?;
+      `, [socket.id], (err, results, fields) => {
+          if (err) {
+            console.error('Помилка переводу знімання балансу:', err);
+            return;
+          }
+        });
+
+    // connection.query(`UPDATE players AS p1
+    // JOIN player_property_ownership AS ppo ON p1.player_id = ppo.player_id
+    // JOIN board_cells AS bc ON ppo.cell_id = bc.id
+    // JOIN players AS p2 ON bc.id = p2.cell_id
+    // SET 
+    //     p1.balance = (
+    //         CASE
+    //             WHEN p1.balance - (
+    //                 CASE ppo.property_level
+    //                     WHEN 'base_rent' THEN bc.base_rent
+    //                     WHEN 'rent_0' THEN bc.rent_0
+    //                     WHEN 'rent_1' THEN bc.rent_1
+    //                     WHEN 'rent_2' THEN bc.rent_2
+    //                     WHEN 'rent_3' THEN bc.rent_3
+    //                     WHEN 'rent_4' THEN bc.rent_4
+    //                     WHEN 'rent_5' THEN bc.rent_5
+    //                     ELSE 0
+    //                 END
+    //             ) < 0 THEN 0
+    //             ELSE p1.balance - (
+    //                 CASE ppo.property_level
+    //                     WHEN 'base_rent' THEN bc.base_rent
+    //                     WHEN 'rent_0' THEN bc.rent_0
+    //                     WHEN 'rent_1' THEN bc.rent_1
+    //                     WHEN 'rent_2' THEN bc.rent_2
+    //                     WHEN 'rent_3' THEN bc.rent_3
+    //                     WHEN 'rent_4' THEN bc.rent_4
+    //                     WHEN 'rent_5' THEN bc.rent_5
+    //                     ELSE 0
+    //                 END
+    //             )
+    //         END
+    //     ),
+    //     p2.balance = p2.balance + (
+    //         CASE ppo.property_level
+    //             WHEN 'base_rent' THEN bc.base_rent
+    //             WHEN 'rent_0' THEN bc.rent_0
+    //             WHEN 'rent_1' THEN bc.rent_1
+    //             WHEN 'rent_2' THEN bc.rent_2
+    //             WHEN 'rent_3' THEN bc.rent_3
+    //             WHEN 'rent_4' THEN bc.rent_4
+    //             WHEN 'rent_5' THEN bc.rent_5
+    //             ELSE 0
+    //         END
+    //     )
+    //     WHERE p1.player_id = ?;
+    // ` ,[socket.id], (err, results, fields) => {
+    //   if (err) {
+    //     console.error('Помилка переводу грошей користувачу:', err);
+    //     return;
+    //   }
+    // });
+
+    // Обрання всіх гравців
+    connection.query('SELECT * FROM players WHERE session_id = ?', [1], (err, results, fields) => {
+      if (err) {
+        console.error('Помилка отримання всіх гравців данної сесії:', err);
+        return;
+      }
+      
+      // Відправка оновленних даних гравців
+      // TODO Оновлення відразу всіх гравців, краще оновлювати одного
+      io.emit('placeNewPlayer', results);
+    });
+
+    connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
+      if (err) {
+        console.error('Помилка отримання всіх гравців данної сесії:', err);
+        return;
+      }
+
+      // Отримати поточний порядок ходу
+      let turnOrder = results[0].turn_order || '';
+      turnOrder = turnOrder.split(',');
+
+      const firstElement = turnOrder.shift();
+
+      // Додавання збереженого першого елемента в кінець масиву
+      turnOrder.push(firstElement);
+
+      const socketId = turnOrder[0];
+
+      turnOrder = turnOrder.join(',');
+
+      // Оновлення порядку хочу
+      connection.query('UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', [turnOrder, 1], (err, results, fields) => {
+        if (err) {
+          console.error('Помилка оновлення запису у таблиці game_sessions:', err);
+          return;
+        }
+      });
+
+      // Знаходження сокету гравця
+      const targetSocket = io.sockets.sockets.get(socketId);
+  
+      // Відправка popupInfo
+      if (targetSocket) {
+        fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+          if (err) {
+            console.error('Помилка читання файлу:', err);
+            return;
+        }
+    
+        try {
+            // Розпарсимо JSON дані
+            const popupInfo = JSON.parse(data);
+    
+            // Отримаємо дані для конкретної дії (throwDice)
+            const throwDiceData = popupInfo.throwDice;
+    
+            // Викликаємо функцію, яка передає дані на клієнт
+            targetSocket.emit('showPlayerInfo', throwDiceData);
+        } catch (parseError) {
+            console.error('Помилка парсингу JSON:', parseError);
+        }
+        });
+      } else {
+        console.error(`Сокет з ID ${socketId} не знайдено`);
+      }
+    });
+  });
+
   // Перехід до наступного гравця
   socket.on('nextTurn', (message: any) => {
     // Отримання порядок ходу з бази
@@ -292,20 +480,40 @@ io.sockets.on('connection', (socket: any) => {
                 if (err) {
                   console.error('Помилка читання файлу:', err);
                   return;
-              }
+                }
           
-              try {
-                  // Розпарсимо JSON дані
-                  const popupInfo = JSON.parse(data);
+                try {
+                    // Розпарсимо JSON дані
+                    const popupInfo = JSON.parse(data);
+            
+                    // Отримаємо дані для конкретної дії (throwDice)
+                    const buyCellData = popupInfo.buyCell;
+            
+                    // Викликаємо функцію, яка передає дані на клієнт
+                    socket.emit('showPlayerInfo', buyCellData);
+                } catch (parseError) {
+                    console.error('Помилка парсингу JSON:', parseError);
+                }
+              });
+            } else if (results[0]['type'] == 'monopoly' && results[0]['player_id']) {
+              fs.readFile('popupInfo.json', 'utf8', (err, data) => {
+                if (err) {
+                  console.error('Помилка читання файлу:', err);
+                  return;
+                }
           
-                  // Отримаємо дані для конкретної дії (throwDice)
-                  const buyCellData = popupInfo.buyCell;
-          
-                  // Викликаємо функцію, яка передає дані на клієнт
-                  socket.emit('showPlayerInfo', buyCellData);
-              } catch (parseError) {
-                  console.error('Помилка парсингу JSON:', parseError);
-              }
+                try {
+                    // Розпарсимо JSON дані
+                    const popupInfo = JSON.parse(data);
+            
+                    // Отримаємо дані для конкретної дії (throwDice)
+                    const rentCellData = popupInfo.rentCell;
+            
+                    // Викликаємо функцію, яка передає дані на клієнт
+                    socket.emit('showPlayerInfo', rentCellData);
+                } catch (parseError) {
+                    console.error('Помилка парсингу JSON:', parseError);
+                }
               });
             } else if (results[0]['type'] !== 'monopoly') {
               connection.query('SELECT turn_order FROM game_sessions WHERE session_id = ?', [1], (err, results, fields) => {
