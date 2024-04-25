@@ -17,8 +17,8 @@ export class TokenComponent {
     let cell = document.getElementById(`cell-${this.playerInfo.cell_id}`);
     if (cell) {
       let cellPos = cell.getBoundingClientRect();
-      this.playerInfo.x = cellPos.left + cellPos.width / 2 - 5 + 'px';
-      this.playerInfo.y = cellPos.top + cellPos.height / 2 - 5 + 'px';
+      this.playerInfo.x = cellPos.left + cellPos.width / 2 - 7.5 + 'px';
+      this.playerInfo.y = cellPos.top + cellPos.height / 2 - 7.5 + 'px';
     }
   }
 }
