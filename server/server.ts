@@ -192,19 +192,9 @@ io.sockets.on('connection', (socket: any) => {
             }
 
             if(results[0]['type'] === 'monopoly' && !results[0]['player_id']) {
-              if (popupInfoData) {
-                const buyCellData = popupInfoData.buyCell;
-                socket.emit('showPlayerInfo', buyCellData);
-              } else {
-                  console.error('Дані popupInfo не завантажені');
-              }
+              sendPopup(socket, 'buyCell');
             } else if (results[0]['type'] == 'monopoly' && results[0]['player_id'] !== socket.id) {
-              if (popupInfoData) {
-                const rentCellData = popupInfoData.rentCell;
-                socket.emit('showPlayerInfo', rentCellData);
-              } else {
-                  console.error('Дані popupInfo не завантажені');
-              }
+              sendPopup(socket, 'rentCell');
             } else if (results[0]['type'] !== 'monopoly') {
               nextTurn();
             } else {
@@ -240,12 +230,7 @@ io.sockets.on('connection', (socket: any) => {
         const targetSocket = io.sockets.sockets.get(socketId);
   
         if (targetSocket) {
-          if (popupInfoData) {
-            const throwDiceData = popupInfoData.throwDice;
-            targetSocket.emit('showPlayerInfo', throwDiceData);
-          } else {
-              console.error('Дані popupInfo не завантажені');
-          }
+          sendPopup(targetSocket, 'throwDice');
         } else {
           console.error(`Сокет з ID ${socketId} не знайдено`);
         }
@@ -311,12 +296,11 @@ function rotateTurnOrder(turnOrder: string): string {
   return turnOrderArr.join(',');
 }
 
-function sendPopup (socket: any) {
+function sendPopup (socket: any, action: string) {
   if (socket) {
-      // Перевірити, чи дані popupInfo вже були завантажені
       if (popupInfoData) {
-          const throwDiceData = popupInfoData.throwDice;
-          socket.emit('showPlayerInfo', throwDiceData);
+          const popupData = popupInfoData[action];
+          socket.emit('showPlayerInfo', popupData);
       } else {
           console.error('Дані popupInfo не завантажені');
       }
@@ -337,7 +321,11 @@ function nextTurn (){
       // Знаходження сокету гравця
       const targetSocket = io.sockets.sockets.get(socketId);
 
-      sendPopup(targetSocket);
+      if (targetSocket) {
+        sendPopup(targetSocket, 'throwDice');
+      } else {
+        console.error(`Сокет з ID ${socketId} не знайдено`);
+      }
     }
   );
 }
