@@ -55,7 +55,7 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('getCash', (cash: any) => {
-    handleGetCash(socket.id, cash);
+    handleGetCash(socket.id, cash, ()=> {placePlayer(), nextTurn()});
   });
 
   socket.on('payCash', (cash: any) => {
@@ -242,6 +242,9 @@ function updatePlayerPosition(socketId: any, message: any, onSuccess: Function, 
     (results: any) => {
       const currentPosition = results[0]['cell_id'];
       const newPos = currentPosition + message > 40 ? currentPosition + message - 40 : currentPosition + message;
+      if (currentPosition + message > 40) {
+        handleGetCash(socketId, 1000, placePlayer);
+      }
       updatePositionInDatabase(newPos, socketId, 
         () => {
           onSuccess(newPos);
@@ -281,6 +284,8 @@ function handleCellType(newPosition: any, socket: any) {
         sendPopup(socket, 'rentCell');
       } else if(results[0]['type'] === 'chance'){
         sendPopup(socket, 'chance');
+      } else if (results[0]['type'] === 'start') {
+        handleGetCash(socket.id, 500, ()=> {placePlayer(), nextTurn()});
       } else {
         nextTurn();
       }
@@ -408,6 +413,7 @@ function sendPopup (socket: any, action: string) {
 }
 
 function nextTurn (){
+  console.log(1);
   getTurnOrderFromDatabase(
     (turnOrder: string) => {
       const newTurnOrder = rotateTurnOrder(turnOrder);
@@ -565,7 +571,7 @@ function getRandomChance(popupData: any) {
   return popupData[randomIndex];
 }
 
-function handleGetCash(socketId: any, cash: any) {
+function handleGetCash(socketId: any, cash: any, callback: () => void) {
   const updateQuery = `
       UPDATE players p SET p.balance = p.balance + ? 
       WHERE p.player_id = ?
@@ -573,8 +579,7 @@ function handleGetCash(socketId: any, cash: any) {
   
   executeQuery(updateQuery, [cash, socketId],
     () => {
-      placePlayer();
-      nextTurn();
+      callback();
     },
     (err: any) => {
       console.error('Помилка оновлення балансу користувача:', err);
