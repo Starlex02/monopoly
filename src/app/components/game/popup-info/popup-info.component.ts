@@ -34,9 +34,23 @@ export class PopupInfoComponent {
       case 'rentCell' : 
         this.rentCell();
         break;
+      case 'getCash' :
+        this.getCash();
+        break;
+      case 'payCash' :
+        this.payCash();
+        break;
     }
 
     this.showPopup = false;
+  }
+
+  payCash() {
+    this.webSocketService.emit('payCash', this.popupInfo.cash);
+  }
+
+  getCash() {
+    this.webSocketService.emit('getCash', this.popupInfo.cash);
   }
 
   throwDice() {

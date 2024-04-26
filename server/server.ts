@@ -54,6 +54,15 @@ io.sockets.on('connection', (socket: any) => {
     handleRentPayment(socket.id);
   });
 
+  socket.on('getCash', (cash: any) => {
+    handleGetCash(socket.id, cash);
+  });
+
+  socket.on('payCash', (cash: any) => {
+    handlePayCahs(socket.id, cash);
+  });
+
+
   // Перехід до наступного гравця
   socket.on('nextTurn', (message: any) => {
     nextTurn();
@@ -88,15 +97,15 @@ function updatePlayerBalanceAndPlacePlayer(socketId: any, callback: any) {
       WHERE p.player_id = ? AND p.balance - cell.cost >= 0
   `;
   
-  connection.query(updateQuery, [socketId], (err, results, fields) => {
-      if (err) {
-          console.error('Помилка оновлення балансу користувача:', err);
-          return;
-      }
-      
+  executeQuery(updateQuery, [socketId],
+    () => {
       placePlayer();
       callback();
-  });
+    },
+    (err: any) => {
+      console.error('Помилка оновлення балансу користувача:', err);
+    }
+  )
 }
 
 function setPlayerPropertyOwnership(socketId: any, callback: any) {
@@ -270,6 +279,8 @@ function handleCellType(newPosition: any, socket: any) {
         sendPopup(socket, 'buyCell');
       } else if (results[0]['type'] === 'monopoly' && results[0]['player_id'] !== socket.id) {
         sendPopup(socket, 'rentCell');
+      } else if(results[0]['type'] === 'chance'){
+        sendPopup(socket, 'chance');
       } else {
         nextTurn();
       }
@@ -376,13 +387,21 @@ function rotateTurnOrder(turnOrder: string): string {
 }
 
 function sendPopup (socket: any, action: string) {
-  if (socket) {
-      if (popupInfoData) {
-          const popupData = popupInfoData[action];
-          socket.emit('showPlayerInfo', popupData);
-      } else {
-          console.error('Дані popupInfo не завантажені');
-      }
+  if (socket && action !== 'chance') {
+    if (popupInfoData) {
+        const popupData = popupInfoData[action];
+        socket.emit('showPlayerInfo', popupData);
+    } else {
+        console.error('Дані popupInfo не завантажені');
+    }
+  } else if (socket && action === 'chance') {
+    if (popupInfoData) {
+      const popupData = popupInfoData[action];
+      const chance = getRandomChance(popupData);
+      socket.emit('showPlayerInfo', chance);
+    } else {
+        console.error('Дані popupInfo не завантажені');
+    }
   } else {
       console.error(`Сокет не знайдено`);
   }
@@ -540,3 +559,44 @@ function loadPopupInfo(callback: () => void) {
       }
   });
 }
+
+function getRandomChance(popupData: any) {
+  const randomIndex = Math.floor(Math.random() * popupData.length);
+  return popupData[randomIndex];
+}
+
+function handleGetCash(socketId: any, cash: any) {
+  const updateQuery = `
+      UPDATE players p SET p.balance = p.balance + ? 
+      WHERE p.player_id = ?
+  `;
+  
+  executeQuery(updateQuery, [cash, socketId],
+    () => {
+      placePlayer();
+      nextTurn();
+    },
+    (err: any) => {
+      console.error('Помилка оновлення балансу користувача:', err);
+    }
+  )
+}
+
+function handlePayCahs(socketId: any, cash: any) {
+  const updateQuery = `
+      UPDATE players p 
+      SET p.balance = p.balance - ? 
+      WHERE p.player_id = ? AND p.balance - ? >= 0
+  `;
+  
+  executeQuery(updateQuery, [cash, socketId, cash],
+    () => {
+      placePlayer();
+      nextTurn();
+    },
+    (err: any) => {
+      console.error('Помилка оновлення балансу користувача:', err);
+    }
+  )
+}
+
