@@ -63,7 +63,78 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('rentCell', (message: any) => {
-    connection.query(`
+    handleRentPayment(socket.id);
+  });
+
+  // Перехід до наступного гравця
+  socket.on('nextTurn', (message: any) => {
+    nextTurn();
+  });
+
+  // Запис нових координат користувача до бази
+  socket.on('moveToken', (message: any) => {
+    updatePlayerPosition(socket.id, message, 
+      (newPosition: any) => {
+        getPlayersAndUpdate(socket, newPosition);
+      },
+      (err: any) => {
+        console.log('Помилка оновлення позиції гравця', err);
+      }
+    );
+  });
+
+  // Початок гри
+  handleGameStart();
+
+  // Вихід гравця
+  socket.on('disconnect', () => {
+    handleDisconnect(socket.id);
+  });
+});
+
+function handleRentPayment(socketId: any) {
+  updatePlayerBalance(socketId, () => {
+      updatePropertyOwnerBalance(socketId, () => {
+          placePlayer();
+          nextTurn();
+      }, (err: any) => {
+          console.error('Помилка переводу знімання балансу власника властивості:', err);
+      });
+  }, (err: any) => {
+      console.error('Помилка переводу знімання балансу гравця:', err);
+  });
+}
+
+function updatePropertyOwnerBalance(playerId: any, onSuccess: Function, onError: Function) {
+  const query = `
+    UPDATE players AS p1
+    JOIN player_property_ownership AS ppo ON p1.cell_id = ppo.cell_id
+    JOIN board_cells AS bc ON ppo.cell_id = bc.id
+    JOIN players AS p2 ON ppo.player_id = p2.player_id
+    SET p2.balance = p2.balance + (
+        CASE ppo.property_level
+            WHEN 'base_rent' THEN bc.base_rent
+            WHEN 'rent_0' THEN bc.rent_0
+            WHEN 'rent_1' THEN bc.rent_1
+            WHEN 'rent_2' THEN bc.rent_2
+            WHEN 'rent_3' THEN bc.rent_3
+            WHEN 'rent_4' THEN bc.rent_4
+            WHEN 'rent_5' THEN bc.rent_5
+            ELSE 0
+        END
+    )
+    WHERE p1.player_id = ?;
+  `;
+  executeQuery(query, [playerId],
+    () => onSuccess(),
+    (err: any) => {
+      onError(err);
+    }
+  )
+}
+
+function updatePlayerBalance(playerId: any, onSuccess: Function, onError: Function) {
+  const query = `
     UPDATE players AS p
     JOIN player_property_ownership AS ppo ON p.cell_id = ppo.cell_id
     JOIN board_cells AS bc ON ppo.cell_id = bc.id
@@ -96,68 +167,15 @@ io.sockets.on('connection', (socket: any) => {
         END
     )
     WHERE p.player_id = ?;
-    `, [socket.id], (err, results, fields) => {
-        if (err) {
-          console.error('Помилка переводу знімання балансу:', err);
-          return;
-        }
-      });
-
-      connection.query(`
-      UPDATE players AS p1
-      JOIN player_property_ownership AS ppo ON p1.cell_id = ppo.cell_id
-      JOIN board_cells AS bc ON ppo.cell_id = bc.id
-      JOIN players AS p2 ON ppo.player_id = p2.player_id
-      SET p2.balance = p2.balance + (
-          CASE ppo.property_level
-              WHEN 'base_rent' THEN bc.base_rent
-              WHEN 'rent_0' THEN bc.rent_0
-              WHEN 'rent_1' THEN bc.rent_1
-              WHEN 'rent_2' THEN bc.rent_2
-              WHEN 'rent_3' THEN bc.rent_3
-              WHEN 'rent_4' THEN bc.rent_4
-              WHEN 'rent_5' THEN bc.rent_5
-              ELSE 0
-          END
-      )
-      WHERE p1.player_id = ?;
-      `, [socket.id], (err, results, fields) => {
-          if (err) {
-            console.error('Помилка переводу знімання балансу:', err);
-            return;
-          }
-        });
-
-    placePlayer();
-
-    nextTurn();
-  });
-
-  // Перехід до наступного гравця
-  socket.on('nextTurn', (message: any) => {
-    nextTurn();
-  });
-
-  // Запис нових координат користувача до бази
-  socket.on('moveToken', (message: any) => {
-    updatePlayerPosition(socket.id, message, 
-      (newPosition: any) => {
-        getPlayersAndUpdate(socket, newPosition);
-      },
-      (err: any) => {
-        console.log('Помилка оновлення позиції гравця', err);
-      }
-    );
-  });
-
-  // Початок гри
-  handleGameStart();
-
-  // Вихід гравця
-  socket.on('disconnect', () => {
-    handleDisconnect(socket.id);
-  });
-});
+  `;
+  
+  executeQuery(query, [playerId],
+    () => onSuccess(),
+    (err: any) => {
+      onError(err);
+    }
+  )
+}
 
 function getCurrentPosition(socketId: any, onSuccess: Function, onError: Function) {
   const query = 'SELECT cell_id FROM players WHERE player_id = ?';
