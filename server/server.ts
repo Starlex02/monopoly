@@ -43,23 +43,11 @@ io.sockets.on('connection', (socket: any) => {
 
   // Купівля поля
   socket.on('buyCell', (message: any) => {
-    connection.query('UPDATE players p JOIN board_cells cell ON p.cell_id = cell.id SET p.balance = p.balance - cell.cost WHERE p.player_id = ? AND p.balance - cell.cost >= 0', [socket.id], (err, results, fields) => {
-      if (err) {
-        console.error('Помилка оновлення балансу користувача:', err);
-        return;
-      }
-
-      placePlayer();
-
-      connection.query("INSERT INTO player_property_ownership (player_id, cell_id, property_level) SELECT ?, p.cell_id, 'base_rent' FROM players p WHERE p.player_id = ?", [socket.id, socket.id], (err, results, fields) => {
-        if (err) {
-          console.error('Помилка оновлення власності гравця:', err);
-          return;
-        }
-
-        nextTurn();
+    updatePlayerBalanceAndPlacePlayer(socket.id, () => {
+      setPlayerPropertyOwnership(socket.id, () => {
+          nextTurn();
       });
-    });
+  });
   });
 
   socket.on('rentCell', (message: any) => {
@@ -91,6 +79,43 @@ io.sockets.on('connection', (socket: any) => {
     handleDisconnect(socket.id);
   });
 });
+
+function updatePlayerBalanceAndPlacePlayer(socketId: any, callback: any) {
+  const updateQuery = `
+      UPDATE players p 
+      JOIN board_cells cell ON p.cell_id = cell.id 
+      SET p.balance = p.balance - cell.cost 
+      WHERE p.player_id = ? AND p.balance - cell.cost >= 0
+  `;
+  
+  connection.query(updateQuery, [socketId], (err, results, fields) => {
+      if (err) {
+          console.error('Помилка оновлення балансу користувача:', err);
+          return;
+      }
+      
+      placePlayer();
+      callback();
+  });
+}
+
+function setPlayerPropertyOwnership(socketId: any, callback: any) {
+  const insertQuery = `
+      INSERT INTO player_property_ownership (player_id, cell_id, property_level) 
+      SELECT ?, p.cell_id, 'base_rent' 
+      FROM players p 
+      WHERE p.player_id = ?
+  `;
+  
+  connection.query(insertQuery, [socketId, socketId], (err, results, fields) => {
+      if (err) {
+          console.error('Помилка оновлення власності гравця:', err);
+          return;
+      }
+
+      callback();
+  });
+}
 
 function handleRentPayment(socketId: any) {
   updatePlayerBalance(socketId, () => {
