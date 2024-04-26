@@ -115,15 +115,13 @@ function setPlayerPropertyOwnership(socketId: any, callback: any) {
       FROM players p 
       WHERE p.player_id = ?
   `;
-  
-  connection.query(insertQuery, [socketId, socketId], (err, results, fields) => {
-      if (err) {
-          console.error('Помилка оновлення власності гравця:', err);
-          return;
-      }
 
-      callback();
-  });
+  executeQuery(insertQuery, [socketId, socketId], 
+    ()=> callback(),
+    (err: any) => {
+      console.error('Помилка оновлення власності гравця:', err);
+    }
+  )
 }
 
 function handleRentPayment(socketId: any) {
@@ -413,7 +411,6 @@ function sendPopup (socket: any, action: string) {
 }
 
 function nextTurn (){
-  console.log(1);
   getTurnOrderFromDatabase(
     (turnOrder: string) => {
       const newTurnOrder = rotateTurnOrder(turnOrder);
