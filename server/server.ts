@@ -59,7 +59,17 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('payCash', (cash: any) => {
-    handlePayCahs(socket.id, cash);
+    handlePayCash(socket.id, cash, ()=> {
+      placePlayer();
+      nextTurn();
+    });
+  });
+
+  socket.on('payOff', (cash: any) => {
+    handlePayCash(socket.id, cash, ()=>{
+      placePlayer();
+    });
+    sendPopup(socket, 'throwDice');
   });
 
 
@@ -284,6 +294,21 @@ function handleCellType(newPosition: any, socket: any) {
         sendPopup(socket, 'chance');
       } else if (results[0]['type'] === 'start') {
         handleGetCash(socket.id, 500, ()=> {placePlayer(), nextTurn()});
+      } else if (results[0]['type'] === 'prison') {
+        getTurnOrderFromDatabase(
+          (turnOrder: any) => {
+            let newTurnOrder = turnOrder.split(',').map((el: string) => {
+              const [socketId, rest] = el.split(':');
+              if (socketId === socket.id) {
+                  return `${socketId}:${parseInt(rest) + turnOrder.split(',').length}`;
+              } else {
+                  return el;
+              }
+            }).join(',');
+
+            updateTurnOrderInDatabase(newTurnOrder, nextTurn);
+          }
+        );
       } else {
         nextTurn();
       }
@@ -300,7 +325,7 @@ function handleGameStart() {
       if (results.length === 4) {
         getTurnOrderFromDatabase(
           (turnOrder: string) => {
-            const socketId = turnOrder.split(',')[0];
+            const socketId = turnOrder.split(',')[0].split(':')[0];
             const targetSocket = io.sockets.sockets.get(socketId);
       
             if (targetSocket) {
@@ -413,20 +438,32 @@ function sendPopup (socket: any, action: string) {
 function nextTurn (){
   getTurnOrderFromDatabase(
     (turnOrder: string) => {
-      const newTurnOrder = rotateTurnOrder(turnOrder);
+      let newTurnOrder = rotateTurnOrder(turnOrder);
       
-      updateTurnOrderInDatabase(newTurnOrder);
-      
-      const socketId = newTurnOrder.split(',')[0];
+      const socketId = newTurnOrder.split(',')[0].split(':')[0];
 
       // Знаходження сокету гравця
       const targetSocket = io.sockets.sockets.get(socketId);
 
       if (targetSocket) {
-        sendPopup(targetSocket, 'throwDice');
+        if(parseInt(newTurnOrder.split(',')[0].split(':')[1]) > 0){
+          sendPopup(targetSocket, 'throwDiceOrPayOff');
+        } else {
+          sendPopup(targetSocket, 'throwDice');
+        }
       } else {
         console.error(`Сокет з ID ${socketId} не знайдено`);
       }
+
+      newTurnOrder = newTurnOrder.split(',').map((el) => {
+        if(parseInt(el.split(':')[1]) > 0){
+          return `${el.split(':')[0]}:${parseInt(el.split(':')[1]) - 1}`;
+        } else {
+          return el
+        }
+      }).join(',');
+
+      updateTurnOrderInDatabase(newTurnOrder);
     }
   );
 }
@@ -496,7 +533,11 @@ function placePlayer() {
 function removePlayerFromTurnOrder(socketId: string) {
   getTurnOrderFromDatabase(
     (turnOrder: string) => {
-      const updatedTurnOrder = turnOrder.split(',').filter((id: string) => id !== socketId).join(',');
+      const updatedTurnOrder = turnOrder.split(',').filter((id: string) => {
+        const removeSocketId = id.split(':')[0];
+        return removeSocketId !== socketId;
+      }).join(',');
+    
 
       updateTurnOrderInDatabase(updatedTurnOrder);
     }
@@ -517,11 +558,15 @@ function getTurnOrderFromDatabase(callback: (turnOrder: string) => void) {
   );
 }
 
-function updateTurnOrderInDatabase(newTurnOrder: string) {
+function updateTurnOrderInDatabase(newTurnOrder: string, callback?: () => void) {
   executeQuery(
       'UPDATE game_sessions SET turn_order = ? WHERE session_id = ?', 
       [newTurnOrder, 1], 
-      () => {}, 
+      () => {
+        if (callback) {
+          callback();
+      }
+      }, 
       (err: any) => console.log('Помилка оновлення черговості ходів:', err)
   );
 }
@@ -529,7 +574,7 @@ function updateTurnOrderInDatabase(newTurnOrder: string) {
 function addPlayerToTurnOrder(socketId: string) {
   getTurnOrderFromDatabase(
     (turnOrder: string) => {
-      const updatedTurnOrder = turnOrder + (turnOrder ? ',' : '') + socketId;
+      const updatedTurnOrder = turnOrder + (turnOrder ? ',' : '') + socketId + ':0';
 
       updateTurnOrderInDatabase(updatedTurnOrder);
     }
@@ -584,7 +629,7 @@ function handleGetCash(socketId: any, cash: any, callback: () => void) {
   )
 }
 
-function handlePayCahs(socketId: any, cash: any) {
+function handlePayCash(socketId: any, cash: any, callback: () => void) {
   const updateQuery = `
       UPDATE players p 
       SET p.balance = p.balance - ? 
@@ -593,8 +638,7 @@ function handlePayCahs(socketId: any, cash: any) {
   
   executeQuery(updateQuery, [cash, socketId, cash],
     () => {
-      placePlayer();
-      nextTurn();
+      callback();
     },
     (err: any) => {
       console.error('Помилка оновлення балансу користувача:', err);

@@ -40,9 +40,23 @@ export class PopupInfoComponent {
       case 'payCash' :
         this.payCash();
         break;
+      case 'payOff' :
+        this.payOff();
+        break;
+      case 'checkLuck' :
+        this.checkLuck();
+        break;
     }
 
     this.showPopup = false;
+  }
+
+  payOff() {
+    this.webSocketService.emit('payOff', this.popupInfo.cash);
+  }
+
+  checkLuck() {
+    this.webSocketService.emit('checkLuck');
   }
 
   payCash() {

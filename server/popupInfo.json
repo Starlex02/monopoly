@@ -33,6 +33,21 @@
             }
         ]
     },
+    "throwDiceOrPayOff" : {
+        "title" : "Оплатити або кинути кубик",
+        "text" : "Оплатіть заставу в 200 або перевірте Вашу вдачу",
+        "cash" : 200,
+        "buttons" : [
+            {
+                "label" : "Оплатити",
+                "action" : "payOff"
+            },
+            {
+                "label" : "Певірити вдачу",
+                "action" : "checkLuck"
+            }
+        ]
+    },
     "chance" : [
         {
             "title" : "Шанс",
