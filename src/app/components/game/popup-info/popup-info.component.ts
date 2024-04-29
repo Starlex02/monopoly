@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
 
 @Component({
@@ -10,7 +11,7 @@ export class PopupInfoComponent {
   popupInfo: any;
   showPopup: boolean = false;
 
-  constructor( private webSocketService: WebSocketService ) { }
+  constructor( private webSocketService: WebSocketService, private gameSessionService: GameSessionService) { }
 
   ngOnInit() {    
     this.webSocketService.showPlayerInfo().subscribe((message: []) => {
@@ -68,9 +69,7 @@ export class PopupInfoComponent {
   }
 
   throwDice() {
-    const random = Math.floor(Math.random() * 12) + 1;
-    console.log('Кинув кубик з числом', random);
-    this.webSocketService.emit('moveToken', random);
+    this.gameSessionService.showDice = true;
   }
 
   nextTurn() {

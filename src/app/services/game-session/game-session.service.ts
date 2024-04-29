@@ -7,6 +7,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
 export class GameSessionService {
   private cellsInfoSubject = new BehaviorSubject<boolean>(false);
   cellsInfo$: Observable<boolean> = this.cellsInfoSubject.asObservable();
+
+  private showDiceSubject = new BehaviorSubject<boolean>(false);
+  showDice$: Observable<boolean> = this.showDiceSubject.asObservable();
   
   playersInfo: any;
   cellsLength: number = 0;
@@ -17,6 +20,14 @@ export class GameSessionService {
 
   get cellsInfo(): boolean {
     return this.cellsInfoSubject.value;
+  }
+
+  set showDice(value: boolean) {
+    this.showDiceSubject.next(value);
+  }
+
+  get showDice(): boolean {
+    return this.showDiceSubject.value;
   }
 
   constructor() { }

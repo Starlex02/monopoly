@@ -1,5 +1,263 @@
-button {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+.dice-container {
+  display: flex;
+  position: absolute;
+  gap: 2vw;
+  top: 44vh;
+  left: 52vw;
+}
+
+.dice {
+  width: 60px;
+  height: 60px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(180deg) rotateY(0deg) rotateZ(0deg) translateX(0);
+}
+
+.dice > div {
+  height: 60px;
+  width: 60px;
+  position: absolute;
+  background: #f76331;
+}
+
+.dice span {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  display: block;
+  position: absolute;
+}
+
+.dice .front {
+  transform: rotateY(0deg) translateZ(30px);
+}
+
+.dice .front span:nth-child(1) {
+  top: 10px;
+  left: 12px;
+}
+
+.dice .front span:nth-child(2) {
+  top: 10px;
+  right: 12px;
+}
+
+.dice .front span:nth-child(3) {
+  top: 26px;
+  left: 12px;
+}
+
+.dice .front span:nth-child(4) {
+  top: 26px;
+  right: 12px;
+}
+
+.dice .front span:nth-child(5) {
+  bottom: 10px;
+  left: 12px;
+}
+
+.dice .front span:nth-child(6) {
+  bottom: 10px;
+  right: 12px;
+}
+
+.dice .bottom {
+  transform: rotateX(-90deg) translateZ(30px);
+}
+
+.dice .bottom span:nth-child(1) {
+  top: 12px;
+  right: 12px;
+}
+
+.dice .bottom span:nth-child(2) {
+  top: 12px;
+  left: 12px;
+}
+
+.dice .bottom span:nth-child(3) {
+  bottom: 12px;
+  left: 12px;
+}
+
+.dice .bottom span:nth-child(4) {
+  bottom: 12px;
+  right: 12px;
+}
+
+.dice .back {
+  transform: rotateX(180deg) translateZ(30px);
+}
+
+.dice .back span {
+  top: 26px;
+  left: 26px;
+}
+
+.dice .right {
+  transform: rotateY(90deg) translateZ(30px);
+}
+
+.dice .right span:nth-child(1) {
+  top: 12px;
+  left: 12px;
+}
+
+.dice .right span:nth-child(2) {
+  top: 12px;
+  right: 12px;
+}
+
+.dice .right span:nth-child(3) {
+  top: 26px;
+  left: 26px;
+}
+
+.dice .right span:nth-child(4) {
+  bottom: 12px;
+  left: 12px;
+}
+
+.dice .right span:nth-child(5) {
+  bottom: 12px;
+  right: 12px;
+}
+
+.dice .left {
+  transform: rotateY(-90deg) translateZ(30px);
+}
+
+.dice .left span:nth-child(1) {
+  top: 12px;
+  right: 12px;
+}
+
+.dice .left span:nth-child(2) {
+  bottom: 12px;
+  left: 12px;
+}
+
+.dice .top {
+  transform: rotateX(90deg) translateZ(30px);
+}
+
+.dice .top span:nth-child(1) {
+  top: 12px;
+  right: 12px;
+}
+
+.dice .top span:nth-child(2) {
+  bottom: 12px;
+  left: 12px;
+}
+
+.dice .top span:nth-child(3) {
+  bottom: 26px;
+  left: 26px;
+}
+
+
+@keyframes rotate-1 {
+  0% {
+    transform: rotateX(180deg) rotateY(0deg) rotateZ(0deg) translateX(0);
+  }
+  100% {
+    transform: rotateX(900deg) rotateY(720deg) rotateZ(720deg) translateX(0);
+  }
+}
+
+@keyframes rotate-2 {
+  0% {
+    transform: rotateX(180deg) rotateY(0deg) rotateZ(0deg) translateX(0);
+  }
+  100% {
+    transform: rotateX(720deg) rotateY(810deg) rotateZ(720deg) translateX(0);
+  }
+}
+
+@keyframes rotate-3 {
+  0% {
+    transform: rotateX(180deg) rotateY(0deg) rotateZ(0deg) translateX(0);
+  }
+  100% {
+    transform: rotateX(630deg) rotateY(720deg) rotateZ(720deg) translateX(0);
+  }
+}
+
+@keyframes rotate-4 {
+  0% {
+    transform: rotateX(180deg) rotateY(0deg) rotateZ(0deg) translateX(0);
+  }
+  100% {
+    transform: rotateX(810deg) rotateY(720deg) rotateZ(720deg) translateX(0);
+  }
+}
+
+@keyframes rotate-5 {
+  0% {
+    transform: rotateX(180deg) rotateY(0deg) rotateZ(0deg) translateX(0);
+  }
+  100% {
+    transform: rotateX(720deg) rotateY(630deg) rotateZ(720deg) translateX(0);
+  }
+}
+
+@keyframes rotate-6 {
+  0% {
+    transform: rotateX(180deg) rotateY(0deg) rotateZ(0deg) translateX(0);
+  }
+  100% {
+    transform: rotateX(720deg) rotateY(720deg) rotateZ(720deg) translateX(0);
+  }
+}
+
+.dice.dice-1 {
+  animation-name: rotate-1;
+  animation-iteration-count: 1;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+  transform: rotateX(180deg);
+}
+
+.dice.dice-2 {
+  animation-name: rotate-2;
+  animation-iteration-count: 1;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+  transform: rotateY(90deg);
+}
+
+.dice.dice-3 {
+  animation-name: rotate-3;
+  animation-iteration-count: 1;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+  transform: rotateX(-90deg);
+}
+
+.dice.dice-4 {
+  animation-name: rotate-4;
+  animation-iteration-count: 1;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+  transform: rotateX(90deg);
+}
+
+.dice.dice-5 {
+  animation-name: rotate-5;
+  animation-iteration-count: 1;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+  transform: rotateY(-90deg);
+}
+
+.dice.dice-6 {
+  animation-name: rotate-6;
+  animation-iteration-count: 1;
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+  transform: rotateY(0deg);
 }

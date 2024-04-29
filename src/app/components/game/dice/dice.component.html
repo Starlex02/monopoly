@@ -1,1 +1,72 @@
-<button *ngIf="showDice" (click)="rollDice()">Кинути кубик</button>
+<div class="dice-container" [style.display]="showDice ? 'flex' : 'none'">
+    <div class="dice" #dice1>
+        <div class="front">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="back">
+            <span></span>
+        </div>
+        <div class="right">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="left">
+            <span></span>
+            <span></span>
+        </div>
+        <div class="top">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="bottom">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="dice" #dice2>
+        <div class="front">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="back">
+            <span></span>
+        </div>
+        <div class="right">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="left">
+            <span></span>
+            <span></span>
+        </div>
+        <div class="top">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="bottom">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+</div>
