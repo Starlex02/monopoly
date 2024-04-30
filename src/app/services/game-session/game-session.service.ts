@@ -13,6 +13,7 @@ export class GameSessionService {
   
   playersInfo: any;
   cellsLength: number = 0;
+  doubleCheck: boolean = false;
 
   set cellsInfo(value: boolean) {
     this.cellsInfoSubject.next(value);

@@ -80,6 +80,11 @@ io.sockets.on('connection', (socket: any) => {
 
   // Запис нових координат користувача до бази
   socket.on('moveToken', (message: any) => {
+    if(message[2] && message[0] !== message[1]) {
+      nextTurn();
+      return;
+    }
+
     updatePlayerPosition(socket.id, message, 
       (newPosition: any) => {
         getPlayersAndUpdate(socket, newPosition);
@@ -302,7 +307,7 @@ function handleCellType(newPosition: any, socket: any) {
             let newTurnOrder = turnOrder.split(',').map((el: string) => {
               const [socketId, rest] = el.split(':');
               if (socketId === socket.id) {
-                  return `${socketId}:${parseInt(rest) + turnOrder.split(',').length}`;
+                  return `${socketId}:${parseInt(rest) + turnOrder.split(',').length * 3}`;
               } else {
                   return el;
               }

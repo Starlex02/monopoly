@@ -57,7 +57,8 @@ export class PopupInfoComponent {
   }
 
   checkLuck() {
-    this.webSocketService.emit('checkLuck');
+    this.gameSessionService.showDice = true;
+    this.gameSessionService.doubleCheck = true;
   }
 
   payCash() {

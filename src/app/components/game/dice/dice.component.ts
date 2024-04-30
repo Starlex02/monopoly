@@ -48,7 +48,10 @@ export class DiceComponent {
       
       dice1.classList.remove('dice-' + random1);
       dice2.classList.remove('dice-' + random2);
-      this.webSocketService.emit('moveToken', [random1, random2]);
+      this.webSocketService.emit('moveToken', [random1, random2, this.gameSessionService.doubleCheck]);
+      if (this.gameSessionService.doubleCheck) {
+        this.gameSessionService.doubleCheck = false;
+      }
     }, 1500)
   }
 }
