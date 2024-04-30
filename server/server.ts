@@ -435,18 +435,17 @@ function getRandomColor() {
 function handleNewPlayerConnection(socketId: string) {
   console.log('Клієнт підключений до WebSocket сервера');
 
-  const playerData = {
-    player_id: socketId,
-    name: `Player ${socketId}`,
-    session_id: 1,
-    balance: 1000,
-    cell_id: 1,
-    color: getRandomColor()
-  };
+  const player_id = socketId;
+  const name = `Player ${socketId}`;
+  const session_id = 1;
+  const balance = 1000;
+  const cell_id = 1;
+  const color = getRandomColor();
 
-  const query = `INSERT INTO players SET ?`;
+  const query = `INSERT INTO players (player_id, name, session_id, balance, cell_id, color, session_order)
+  SELECT ?, ?, ?, ?, ?, ?, COUNT(*) + 1 FROM players WHERE session_id = ?`;
 
-  executeQuery(query, playerData, 
+  executeQuery(query, [player_id, name, session_id, balance, cell_id, color, session_id], 
     () => {
       placePlayer();
 
@@ -565,6 +564,7 @@ function getPlayersData(successCallback: (results: any) => void, errorCallback: 
     FROM 
       players 
     WHERE session_id = ?
+    ORDER BY session_order
   `;
 
   executeQuery(query, [1], successCallback, errorCallback);
