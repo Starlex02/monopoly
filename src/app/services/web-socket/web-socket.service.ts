@@ -59,4 +59,12 @@ export class WebSocketService {
       });
     });
   }
+
+  getDiceNumber() {
+    return new Observable<any>(observer => {
+      this.socket.on('throwDice', (data: any) => {
+        observer.next(data);
+      });
+    });
+  }
 }

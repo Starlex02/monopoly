@@ -41,13 +41,20 @@ io.sockets.on('connection', (socket: any) => {
     initBoard(socket);
   });
 
+  socket.on('throwDice', (doubleCheck: any)=> {
+    const random1 = Math.floor(Math.random() * 6) + 1;
+    const random2 = Math.floor(Math.random() * 6) + 1;
+    socket.emit('throwDice', [random1, random2, true, doubleCheck]);    
+    socket.broadcast.emit('throwDice', [random1, random2, false, doubleCheck]);
+  })
+
   // Купівля поля
   socket.on('buyCell', (message: any) => {
     updatePlayerBalanceAndPlacePlayer(socket.id, () => {
       setPlayerPropertyOwnership(socket.id, () => {
-          nextTurn();
+        nextTurn();
       });
-  });
+    });
   });
 
   socket.on('rentCell', (message: any) => {

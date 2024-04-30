@@ -9,48 +9,35 @@ import { WebSocketService } from 'src/app/services/web-socket/web-socket.service
 })
 export class DiceComponent {
   showDice:boolean = false;
-  isRolling:boolean = false;
   
   @ViewChild('dice1') dice1Ref!: ElementRef;
   @ViewChild('dice2') dice2Ref!: ElementRef;
 
-  constructor( private webSocketService: WebSocketService, private gameSessionService: GameSessionService ) { }
+  constructor( private webSocketService: WebSocketService ) { }
 
   ngOnInit() {
-    this.gameSessionService.showDice$.subscribe((showDice: boolean) => {
-      if(this.gameSessionService.showDice){
-        this.showDice = true;
-        this.gameSessionService.showDice = false;
-        this.rollDice();
-      }
+    this.webSocketService.getDiceNumber().subscribe((diceInfo: []) => {
+      this.rollDice(diceInfo);
     });
   }
 
-  rollDice() {
-    if(this.isRolling) {
-      return;
-    }
-
+  rollDice(diceInfo: any) {
+    const [random1, random2, currentPlayer, doubleCheck]: [number, number, boolean, boolean] = diceInfo;
     this.showDice = true;
-    this.isRolling = true;
 
     const dice1 = this.dice1Ref?.nativeElement;
     const dice2 = this.dice2Ref?.nativeElement;
 
-    const random1 = Math.floor(Math.random() * 6) + 1;
-    const random2 = Math.floor(Math.random() * 6) + 1;
-
     dice1.classList.add('dice-' + random1);
     dice2.classList.add('dice-' + random2);
+    
     setTimeout(()=>{
       this.showDice = false;
-      this.isRolling = false;
       
       dice1.classList.remove('dice-' + random1);
       dice2.classList.remove('dice-' + random2);
-      this.webSocketService.emit('moveToken', [random1, random2, this.gameSessionService.doubleCheck]);
-      if (this.gameSessionService.doubleCheck) {
-        this.gameSessionService.doubleCheck = false;
+      if(currentPlayer) {
+        this.webSocketService.emit('moveToken', [random1, random2, doubleCheck]);
       }
     }, 1500)
   }

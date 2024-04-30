@@ -57,8 +57,7 @@ export class PopupInfoComponent {
   }
 
   checkLuck() {
-    this.gameSessionService.showDice = true;
-    this.gameSessionService.doubleCheck = true;
+    this.webSocketService.emit('throwDice', true);
   }
 
   payCash() {
@@ -70,7 +69,7 @@ export class PopupInfoComponent {
   }
 
   throwDice() {
-    this.gameSessionService.showDice = true;
+    this.webSocketService.emit('throwDice', false);
   }
 
   nextTurn() {
