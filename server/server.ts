@@ -90,11 +90,27 @@ io.sockets.on('connection', (socket: any) => {
     if(message[2] && message[0] !== message[1]) {
       nextTurn();
       return;
+    } else if (message[2] && message[0] === message[1]) {
+      getTurnOrderFromDatabase(
+        (turnOrder:string) => {
+          let newTurnOrder = turnOrder.split(',').map((el: string) => {
+            const socketId = el.split(':')[0];
+            if (socketId === socket.id) {
+                return `${socketId}:0`;
+            } else {
+                return el;
+            }
+          }).join(',');
+          updateTurnOrderInDatabase(newTurnOrder);
+        }
+      );
     }
+
+    const doubleDice:boolean = !message[2] && message[0] === message[1];
 
     updatePlayerPosition(socket.id, message, 
       (newPosition: any) => {
-        getPlayersAndUpdate(socket, newPosition);
+        getPlayersAndUpdate(socket, newPosition, doubleDice);
       },
       (err: any) => {
         console.log('Помилка оновлення позиції гравця', err);
@@ -283,11 +299,11 @@ function updatePlayerPosition(socketId: any, message: any, onSuccess: Function, 
 }
 
 // Отримання даних гравців
-function getPlayersAndUpdate(socket: any, newPosition: any) {
+function getPlayersAndUpdate(socket: any, newPosition: any, doubleDice: boolean) {
   getPlayersData(
     (results) => {
       io.emit('placeNewPlayer', results);
-      handleCellType(newPosition, socket);
+      handleCellType(newPosition, socket, doubleDice);
     },
     (err) => {
       console.error('Помилка отримання всіх гравців данної сесії:', err);
@@ -296,10 +312,31 @@ function getPlayersAndUpdate(socket: any, newPosition: any) {
 }
 
 // Обробка клітини
-function handleCellType(newPosition: any, socket: any) {
+function handleCellType(newPosition: any, socket: any, doubleDice: boolean) {
   const query = 'SELECT cell.type, pl_owner.player_id FROM board_cells cell LEFT JOIN player_property_ownership pl_owner on cell.id = pl_owner.cell_id WHERE cell.id = ?';
   executeQuery(query, [newPosition],
     (results: any) => {
+      if(doubleDice && results[0]['type'] !== 'prison') {
+        getTurnOrderFromDatabase(
+          (turnOrder: string) => {
+            const turnOrderArr: any[] = turnOrder.split(',').map((el: string, index: number)=> {
+              if(index === 0) {
+                return el;
+              }
+  
+              const [socketId, rest] = el.split(':');
+              return `${socketId}:${parseInt(rest) + 1}`; 
+            });
+            
+            const lastElement = turnOrderArr.pop();
+            turnOrderArr.unshift(lastElement);
+            const newTurnOrder = turnOrderArr.join(',');
+      
+            updateTurnOrderInDatabase(newTurnOrder);
+          }
+        );
+      }
+
       if (results[0]['type'] === 'monopoly' && !results[0]['player_id']) {
         sendPopup(socket, 'buyCell');
       } else if (results[0]['type'] === 'monopoly' && results[0]['player_id'] !== socket.id) {
