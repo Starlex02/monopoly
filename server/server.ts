@@ -52,7 +52,10 @@ io.sockets.on('connection', (socket: any) => {
   socket.on('buyCell', (message: any) => {
     updatePlayerBalanceAndPlacePlayer(socket.id, () => {
       setPlayerPropertyOwnership(socket.id, () => {
-        nextTurn();
+        updatePropertyOwnershipIfSameType(socket.id, () => {
+          placePlayer();
+          nextTurn();
+        });
       });
     });
   });
@@ -137,7 +140,6 @@ function updatePlayerBalanceAndPlacePlayer(socketId: any, callback: any) {
   
   executeQuery(updateQuery, [socketId],
     () => {
-      placePlayer();
       callback();
     },
     (err: any) => {
@@ -693,6 +695,63 @@ function handlePayCash(socketId: any, cash: any, callback: () => void) {
     },
     (err: any) => {
       console.error('Помилка оновлення балансу користувача:', err);
+    }
+  )
+}
+
+function updatePropertyOwnershipIfSameType(socketId: any, callback: () => void) {
+  const insertQuery = `
+  UPDATE player_property_ownership AS ppo
+  JOIN (
+      SELECT 
+          pc.id,
+          (
+              SELECT 
+                  COUNT(*) 
+              FROM 
+                  board_cells AS bc
+              WHERE 
+                  bc.group_id = pc.group_id
+          ) AS board_cell_count,
+          (
+              SELECT 
+                  COUNT(*) 
+              FROM 
+                  player_property_ownership AS ppo_inner
+              WHERE 
+                  ppo_inner.player_id = ? -- Ваш player_id
+                  AND ppo_inner.cell_id IN (
+                      SELECT 
+                          pc.id
+                      FROM 
+                          players AS pl
+                      INNER JOIN 
+                          board_cells AS bc ON pl.cell_id = bc.id
+                      INNER JOIN 
+                          board_cells AS pc ON bc.group_id = pc.group_id
+                      WHERE 
+                          pl.player_id = ? -- Ваш player_id
+                  )
+          ) AS ownership_cell_count
+      FROM 
+          players AS pl
+      INNER JOIN 
+          board_cells AS bc ON pl.cell_id = bc.id
+      INNER JOIN 
+          board_cells AS pc ON bc.group_id = pc.group_id
+      WHERE 
+          pl.player_id = ? -- Ваш player_id
+  ) AS counted_cells ON ppo.cell_id = counted_cells.id
+  SET 
+      ppo.property_level = 'rent_0'
+  WHERE 
+      counted_cells.board_cell_count = counted_cells.ownership_cell_count;
+  `;
+
+  executeQuery(insertQuery, [socketId, socketId, socketId], 
+    ()=> callback(),
+    (err: any) => {
+      console.error('Помилка оновлення власності гравця:', err);
     }
   )
 }
