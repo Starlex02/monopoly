@@ -1,4 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { GameSessionService } from 'src/app/services/game-session/game-session.service';
+import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
 
 @Component({
   selector: 'game-popup-card',
@@ -7,6 +9,21 @@ import { Component, Input } from '@angular/core';
 })
 export class PopupCardComponent {
   @Input() data: any;
+  @Output() closePopup: EventEmitter<void> = new EventEmitter<void>();
+  
+  constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService) {}
 
-  constructor() {}
+  buyOrSellBranch(action: string) {
+    switch (action) {
+      case 'buyBranch': 
+        this.webSocketService.emit('buyBranch', this.data.id);
+        this.gameSessionService.showBuyBranchButton = false;
+        break;
+      case 'sellBranch': 
+        this.webSocketService.emit('sellBranch', this.data.id);
+        break;
+    }
+
+    this.closePopup.emit();
+  }
 }

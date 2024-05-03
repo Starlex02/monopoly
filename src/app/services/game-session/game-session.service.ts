@@ -10,6 +10,8 @@ export class GameSessionService {
   
   playersInfo: any;
   cellsLength: number = 0;
+  showPopup: boolean = false;
+  showBuyBranchButton: boolean = false;
 
   set cellsInfo(value: boolean) {
     this.cellsInfoSubject.next(value);

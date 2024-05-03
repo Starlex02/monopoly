@@ -17,6 +17,8 @@ export class PopupInfoComponent {
     this.webSocketService.showPlayerInfo().subscribe((message: []) => {
       this.popupInfo = message;
 
+      this.gameSessionService.showPopup = true;
+      this.gameSessionService.showBuyBranchButton = true;
       this.showPopup = true;
     }); 
   }
@@ -50,6 +52,8 @@ export class PopupInfoComponent {
     }
 
     this.showPopup = false;
+    this.gameSessionService.showPopup = false;
+    this.gameSessionService.showBuyBranchButton = false;
   }
 
   payOff() {

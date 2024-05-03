@@ -82,10 +82,91 @@ io.sockets.on('connection', (socket: any) => {
     sendPopup(socket, 'throwDice');
   });
 
-
   // Перехід до наступного гравця
   socket.on('nextTurn', (message: any) => {
     nextTurn();
+  });
+
+  socket.on('buyBranch', (cellId : number) => {
+    const query = `
+      UPDATE players p 
+      JOIN board_cells cell ON cell.id = ? 
+      SET p.balance = p.balance - cell.buy_branch 
+      WHERE p.player_id = ? AND p.balance - cell.buy_branch >= 0
+    `;
+  
+    executeQuery(query, [cellId, socket.id],
+      () => {
+        const query = `
+          UPDATE player_property_ownership p_owner 
+          SET p_owner.property_level = 
+              CASE 
+                  WHEN p_owner.property_level = 'rent_0' THEN 'rent_1'
+                  WHEN p_owner.property_level = 'rent_1' THEN 'rent_2'
+                  WHEN p_owner.property_level = 'rent_2' THEN 'rent_3'
+                  WHEN p_owner.property_level = 'rent_3' THEN 'rent_4'
+                  WHEN p_owner.property_level = 'rent_4' THEN 'rent_5'
+                  ELSE p_owner.property_level
+              END
+          WHERE 
+            p_owner.player_id = ? AND
+            p_owner.cell_id = ?
+        `;
+  
+        executeQuery(query, [socket.id, cellId],
+          () => {
+            placePlayer();
+          },
+          (err: any) => {
+            console.error('Помилка оновлення власності:', err);
+          }
+        )
+      },
+      (err: any) => {
+        console.error('Помилка оновлення балансу користувача:', err);
+      }
+    )
+  });
+
+  socket.on('sellBranch', (cellId: number) => {
+    const query = `
+      UPDATE players p 
+      JOIN board_cells cell ON cell.id = ? 
+      SET p.balance = p.balance + cell.sell_branch 
+      WHERE p.player_id = ?
+    `;
+  
+    executeQuery(query, [cellId, socket.id],
+      () => {
+        const query = `
+          UPDATE player_property_ownership p_owner 
+          SET p_owner.property_level = 
+              CASE 
+                  WHEN p_owner.property_level = 'rent_5' THEN 'rent_4'
+                  WHEN p_owner.property_level = 'rent_4' THEN 'rent_3'
+                  WHEN p_owner.property_level = 'rent_3' THEN 'rent_2'
+                  WHEN p_owner.property_level = 'rent_2' THEN 'rent_1'
+                  WHEN p_owner.property_level = 'rent_1' THEN 'rent_0'
+                  ELSE p_owner.property_level
+              END
+          WHERE 
+            p_owner.player_id = ? AND
+            p_owner.cell_id = ?
+        `;
+  
+        executeQuery(query, [socket.id, cellId],
+          () => {
+            placePlayer();
+          },
+          (err: any) => {
+            console.error('Помилка оновлення власності:', err);
+          }
+        )
+      },
+      (err: any) => {
+        console.error('Помилка оновлення балансу користувача:', err);
+      }
+    )
   });
 
   // Запис нових координат користувача до бази
@@ -520,7 +601,7 @@ function nextTurn (){
   );
 }
 
-function getBoardData(successCallback: (results: any) => void, errorCallback: (err: any) => void) {
+function getBoardData(socketId: string, successCallback: (results: any) => void, errorCallback: (err: any) => void) {
   const query = `
     SELECT 
       cell.*,
@@ -534,7 +615,48 @@ function getBoardData(successCallback: (results: any) => void, errorCallback: (e
           WHEN player_owner.property_level = 'rent_4' THEN cell.rent_4
           WHEN player_owner.property_level = 'rent_5' THEN cell.rent_5
           ELSE 0 
-      END AS rent
+      END AS rent,
+      CASE 
+        WHEN player_owner.player_id = ? THEN 1
+        ELSE 0
+      END AS is_owner,
+      CASE 
+        WHEN (
+            CASE 
+                WHEN player_owner.property_level = 'base_rent' THEN cell.base_rent
+                WHEN player_owner.property_level = 'rent_0' THEN cell.rent_0
+                WHEN player_owner.property_level = 'rent_1' THEN cell.rent_1
+                WHEN player_owner.property_level = 'rent_2' THEN cell.rent_2
+                WHEN player_owner.property_level = 'rent_3' THEN cell.rent_3
+                WHEN player_owner.property_level = 'rent_4' THEN cell.rent_4
+                WHEN player_owner.property_level = 'rent_5' THEN cell.rent_5
+                ELSE 0 
+            END
+        ) > (
+            SELECT 
+                MIN(
+                    CASE 
+                        WHEN p_owner.property_level = 'base_rent' THEN cell2.base_rent
+                        WHEN p_owner.property_level = 'rent_0' THEN cell2.rent_0
+                        WHEN p_owner.property_level = 'rent_1' THEN cell2.rent_1
+                        WHEN p_owner.property_level = 'rent_2' THEN cell2.rent_2
+                        WHEN p_owner.property_level = 'rent_3' THEN cell2.rent_3
+                        WHEN p_owner.property_level = 'rent_4' THEN cell2.rent_4
+                        WHEN p_owner.property_level = 'rent_5' THEN cell2.rent_5
+                        ELSE 0 
+                    END
+                ) 
+            FROM 
+                board_cells AS cell2
+            LEFT JOIN 
+                player_property_ownership AS p_owner ON cell2.id = p_owner.cell_id
+            WHERE 
+                p_owner.player_id = player_owner.player_id AND 
+                cell2.group_id = cell.group_id AND
+                cell2.id != cell.id
+        ) THEN 0
+        ELSE 1
+    END AS allow_buy_branch
     FROM 
         board_cells AS cell
     LEFT JOIN 
@@ -545,11 +667,12 @@ function getBoardData(successCallback: (results: any) => void, errorCallback: (e
         cell.field_order;
   `;
 
-  executeQuery(query, [], successCallback, errorCallback);
+  executeQuery(query, [socketId], successCallback, errorCallback);
 }
 
 function initBoard (socket: any) {
   getBoardData(
+    socket.id,
     (results: any) => {
       socket.emit('getBoardCells', results);
     },

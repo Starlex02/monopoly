@@ -1,7 +1,7 @@
 <div class="popup">
     <p>{{ data?.name }}</p>
     <p>{{ data?.group }}</p>
-    <p>Базова орендна плата {{ data?.cost }}</p>
+    <p>Базова орендна плата {{ data?.base_rent }}</p>
     <p>Орендна плата за всі картки цього типу {{ data?.rent_0 }}</p>
     <p>⭐ {{ data?.rent_1 }}</p>
     <p>⭐⭐ {{ data?.rent_2 }}</p>
@@ -9,6 +9,8 @@
     <p>⭐⭐⭐⭐ {{ data?.rent_4 }}</p>
     <p>🌟 {{ data?.rent_5 }}</p>
     <hr>
+    <p>Купівля {{ data?.cost }}</p>
     <p>Покупка філіала {{ data?.buy_branch }}</p>
     <p>Продаж філіала {{ data?.sell_branch }}</p>
+    <button *ngFor="let button of data.buttons" (click)="buyOrSellBranch(button.action)">{{button.label}}</button>
 </div>

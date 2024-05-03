@@ -2,4 +2,4 @@
     <game-cell *ngFor="let cell of cells" [ngClass]="[cell.type, cell.pos ? cell.pos: '']" [id]="'cell-' + cell.id" [cell]="cell" (click)="showPopup(cell)" [ngStyle]="{'background-color': cell?.owner_color}"></game-cell>
 </div>
 
-<game-popup-card *ngIf="popupVisible" [data]="popupData"></game-popup-card>
+<game-popup-card *ngIf="popupVisible" [data]="popupData" (closePopup)="onClosePopup()"></game-popup-card>
