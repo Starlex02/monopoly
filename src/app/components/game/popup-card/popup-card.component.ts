@@ -10,6 +10,7 @@ import { WebSocketService } from 'src/app/services/web-socket/web-socket.service
 export class PopupCardComponent {
   @Input() data: any;
   @Output() closePopup: EventEmitter<void> = new EventEmitter<void>();
+  @Input() playerBalance: number = 0;
   
   constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService) {}
 

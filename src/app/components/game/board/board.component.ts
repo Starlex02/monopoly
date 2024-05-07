@@ -11,12 +11,15 @@ export class BoardComponent {
   cells: any[] = [];
   popupVisible = false;
   popupData: any;
+  playerBalance: any;
 
   constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService) { }
 
   ngOnInit() {    
     this.webSocketService.getBoardCells().subscribe((message: []) => {
       this.cells = message;
+      const currentPlayer = this.gameSessionService.playersInfo.find((player: any) => player.player_id === this.webSocketService.socket.id);
+      this.playerBalance = currentPlayer ? currentPlayer.balance : null;
     }); 
   }
 

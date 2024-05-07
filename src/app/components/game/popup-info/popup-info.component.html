@@ -1,6 +1,6 @@
 <ng-container *ngIf="showPopup">
     <h1>{{popupInfo.title}}</h1>
     <p>{{popupInfo.text}}</p>
-    <button *ngFor="let button of popupInfo.buttons" (click)="handleButtonClick(button.action)">{{button.label}}</button>
+    <button *ngFor="let button of popupInfo.buttons" (click)="handleButtonClick(button.action)" [disabled]="button?.checkBalance && playerBalance < popupInfo.cash" >{{button.label}}</button>
 </ng-container>
 

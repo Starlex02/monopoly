@@ -12,10 +12,12 @@
     "buyCell" : {
         "title" : "Купуємо?",
         "text" : "Купіть чи скасуйте купівлю цього поля",
+        "cash" : 0,
         "buttons" : [
             {
                 "label" : "Купити поле",
-                "action" : "buyCell"
+                "action" : "buyCell",
+                "checkBalance" : true
             },
             {
                 "label" : "Скасувати",
@@ -26,10 +28,12 @@
     "rentCell" : {
         "title" : "Оплатити",
         "text" : "Оплатіть ваші витрати",
+        "cash" : 0,
         "buttons" : [
             {
                 "label" : "Оплатити",
-                "action" : "rentCell"
+                "action" : "rentCell",
+                "checkBalance" : true
             }
         ]
     },
@@ -40,7 +44,8 @@
         "buttons" : [
             {
                 "label" : "Оплатити",
-                "action" : "payOff"
+                "action" : "payOff",
+                "checkBalance" : true
             },
             {
                 "label" : "Певірити вдачу",
@@ -67,7 +72,8 @@
             "buttons" : [
                 {
                     "label" : "Оплатити",
-                    "action" : "payCash"
+                    "action" : "payCash",
+                    "checkBalance" : true
                 }
             ]
         }

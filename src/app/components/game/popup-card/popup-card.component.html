@@ -12,5 +12,5 @@
     <p>Купівля {{ data?.cost }}</p>
     <p>Покупка філіала {{ data?.buy_branch }}</p>
     <p>Продаж філіала {{ data?.sell_branch }}</p>
-    <button *ngFor="let button of data.buttons" (click)="buyOrSellBranch(button.action)">{{button.label}}</button>
+    <button *ngFor="let button of data.buttons" (click)="buyOrSellBranch(button.action)" [disabled]="button.action == 'buyBranch' && playerBalance < data.buy_branch">{{button.label}}</button>
 </div>

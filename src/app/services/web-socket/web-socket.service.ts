@@ -6,7 +6,7 @@ import { io, Socket } from 'socket.io-client';
   providedIn: 'root'
 })
 export class WebSocketService {
-  private socket: Socket;
+  public socket: Socket;
 
   constructor() {
     this.socket = io('ws://localhost:4201');

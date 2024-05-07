@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
 
@@ -10,11 +10,31 @@ import { WebSocketService } from 'src/app/services/web-socket/web-socket.service
 export class PopupInfoComponent {
   popupInfo: any;
   showPopup: boolean = false;
+  playerBalance: number = 0;
+  cells: any;
 
   constructor( private webSocketService: WebSocketService, private gameSessionService: GameSessionService) { }
 
   ngOnInit() {    
-    this.webSocketService.showPlayerInfo().subscribe((message: []) => {
+    this.webSocketService.getBoardCells().subscribe((message: []) => {
+      this.cells = message;
+
+      const currentPlayer = this.gameSessionService.playersInfo.find((player: any) => player.player_id === this.webSocketService.socket.id);
+      this.playerBalance = currentPlayer ? currentPlayer.balance : null;
+
+      if(this.popupInfo && this.popupInfo.cash === 0) {
+        this.popupInfo.cash = this.cells[currentPlayer.cell_id - 1].rent ? this.cells[currentPlayer.cell_id - 1].rent : this.cells[currentPlayer.cell_id - 1].cost
+      }
+    }); 
+
+    this.webSocketService.showPlayerInfo().subscribe((message: any) => {
+      const currentPlayer = this.gameSessionService.playersInfo.find((player: any) => player.player_id === this.webSocketService.socket.id);
+      this.playerBalance = currentPlayer ? currentPlayer.balance : null;
+
+      if(message.cash === 0) {
+        message.cash = this.cells[currentPlayer.cell_id - 1].rent ? this.cells[currentPlayer.cell_id - 1].rent : this.cells[currentPlayer.cell_id - 1].cost
+      }
+
       this.popupInfo = message;
 
       this.gameSessionService.showPopup = true;

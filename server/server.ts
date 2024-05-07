@@ -76,8 +76,20 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('payOff', (cash: any) => {
-    handlePayCash(socket.id, cash, ()=>{
-      placePlayer();
+    handlePayCash(socket.id, cash, () => {
+      getTurnOrderFromDatabase(
+        (turnOrder:string) => {
+          let newTurnOrder = turnOrder.split(',').map((el: string) => {
+            const socketId = el.split(':')[0];
+            if (socketId === socket.id) {
+                return `${socketId}:0`;
+            } else {
+                return el;
+            }
+          }).join(',');
+          updateTurnOrderInDatabase(newTurnOrder, placePlayer);
+        }
+      );
     });
     sendPopup(socket, 'throwDice');
   });
