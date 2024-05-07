@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { elementAt } from 'rxjs';
 import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
 
@@ -22,8 +23,10 @@ export class PopupInfoComponent {
       const currentPlayer = this.gameSessionService.playersInfo.find((player: any) => player.player_id === this.webSocketService.socket.id);
       this.playerBalance = currentPlayer ? currentPlayer.balance : null;
 
+      const currentCell = this.cells.find((element: any) => element.id === currentPlayer.cell_id)
+
       if(this.popupInfo && this.popupInfo.cash === 0) {
-        this.popupInfo.cash = this.cells[currentPlayer.cell_id - 1].rent ? this.cells[currentPlayer.cell_id - 1].rent : this.cells[currentPlayer.cell_id - 1].cost
+        this.popupInfo.cash = currentCell.rent ? currentCell.rent : currentCell.cost
       }
     }); 
 
@@ -31,8 +34,10 @@ export class PopupInfoComponent {
       const currentPlayer = this.gameSessionService.playersInfo.find((player: any) => player.player_id === this.webSocketService.socket.id);
       this.playerBalance = currentPlayer ? currentPlayer.balance : null;
 
+      const currentCell = this.cells.find((element: any) => element.id === currentPlayer.cell_id)
+
       if(message.cash === 0) {
-        message.cash = this.cells[currentPlayer.cell_id - 1].rent ? this.cells[currentPlayer.cell_id - 1].rent : this.cells[currentPlayer.cell_id - 1].cost
+        message.cash = currentCell.rent ? currentCell.rent : currentCell.cost
       }
 
       this.popupInfo = message;
