@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, HostListener } from '@angular/core';
 import { GameSessionService } from 'src/app/services/game-session/game-session.service';
 import { WebSocketService } from 'src/app/services/web-socket/web-socket.service';
 
@@ -13,7 +13,14 @@ export class BoardComponent {
   popupData: any;
   playerBalance: any;
 
-  constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService) { }
+  constructor(private webSocketService: WebSocketService, private gameSessionService: GameSessionService, private elementRef: ElementRef) { }
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event) {
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.popupVisible = false;
+    }
+  }
 
   ngOnInit() {    
     this.webSocketService.getBoardCells().subscribe((message: []) => {
@@ -41,7 +48,7 @@ export class BoardComponent {
 
     this.popupData = cell;
     if (this.popupData.type === 'monopoly') {
-      this.popupVisible = !this.popupVisible;
+      this.popupVisible = true;
     } else {
       this.popupVisible = false;
     }
