@@ -74,11 +74,20 @@ export class PopupInfoComponent {
       case 'checkLuck' :
         this.checkLuck();
         break;
+      case 'surrender' :
+        this.surrender();
+        break;
     }
 
     this.showPopup = false;
     this.gameSessionService.showPopup = false;
     this.gameSessionService.showBuyBranchButton = false;
+  }
+
+  surrender() {
+    this.showPopup = false;
+    this.gameSessionService.showPopup = false;
+    this.webSocketService.emit('surrender');
   }
 
   payOff() {

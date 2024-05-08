@@ -1,1 +1,1 @@
-<div [id]="playerInfo.player_id" [ngStyle]="{'left': playerInfo.x, 'top':playerInfo.y, 'background-color': playerInfo.color}"></div>
+<div *ngIf="playerInfo.active" [id]="playerInfo.player_id" [ngStyle]="{'left': playerInfo.x, 'top':playerInfo.y, 'background-color': playerInfo.color}"></div>

@@ -60,9 +60,57 @@ io.sockets.on('connection', (socket: any) => {
     });
   });
 
+  socket.on('surrender', (message: any) => {
+    const query = `
+      UPDATE players
+      SET active = 0
+      WHERE player_id = ?
+    `;
+
+    executeQuery(query, [socket.id], () => {
+      deletePlayerPropertyOwnership(socket.id);
+      removePlayerFromTurnOrder(socket.id, () => {
+        getTurnOrderFromDatabase(
+          (turnOrder: string) => {
+              let turnOrderArr: any[] = turnOrder.split(',');
+
+              let allRestGreatesThanOne = true;
+              for (let i = 0; i < turnOrderArr.length; i++) {
+                  if (turnOrderArr[i].split(':')[1] == 0) {
+                      allRestGreatesThanOne = false;
+                      break;
+                  }
+              }
+
+              if(allRestGreatesThanOne) {
+                turnOrderArr = turnOrderArr.map(element => {
+                  let [socketId, rest] = element.split(':');
+                  
+                  return `${socketId}:${parseInt(rest) - 1}`; 
+                });
+              } else {
+                const lastElement = turnOrderArr.pop();
+                turnOrderArr.unshift(lastElement);
+              }
+
+              const newTurnOrder: string = turnOrderArr.join(',');
+
+              updateTurnOrderInDatabase(newTurnOrder, ()=> {
+                placePlayer();
+                nextTurn();
+              });
+            }
+          )
+      });
+    }, (err: any) => {
+      console.log("Помилка деактивації гравця: ", err);
+    })
+  });
+
   socket.on('rentCell', (message: any) => {
     handleRentPayment(socket.id);
   });
+
 
   socket.on('getCash', (cash: any) => {
     handleGetCash(socket.id, cash, ()=> {placePlayer(), nextTurn()});
@@ -376,7 +424,7 @@ function updatePlayerPosition(socketId: any, message: any, onSuccess: Function, 
 
       const newPos = currentPosition + diceNumber > 40 ? currentPosition + diceNumber - 40 : currentPosition + diceNumber;
       if (currentPosition + diceNumber > 40) {
-        handleGetCash(socketId, 1000, placePlayer);
+        handleGetCash(socketId, 0, placePlayer);
       }
       updatePositionInDatabase(newPos, socketId, 
         () => {
@@ -435,7 +483,69 @@ function handleCellType(newPosition: any, socket: any, doubleDice: boolean) {
       if (results[0]['type'] === 'monopoly' && !results[0]['player_id']) {
         sendPopup(socket, 'buyCell');
       } else if (results[0]['type'] === 'monopoly' && results[0]['player_id'] !== socket.id) {
-        sendPopup(socket, 'rentCell');
+        const query = `
+          SELECT 
+          CASE
+              WHEN (balance + COALESCE(total_sell_branch, 0) - total_rent) >= 0 THEN 1
+              ELSE 0
+          END AS can_afford_expenses
+          FROM (
+              SELECT 
+                  (SELECT p.balance FROM players p WHERE p.player_id = ?) AS balance,
+                  (SELECT 
+                      SUM(cell.sell_branch * 
+                          CASE 
+                              WHEN p_owner.property_level = 'rent_1' THEN 1
+                              WHEN p_owner.property_level = 'rent_2' THEN 2
+                              WHEN p_owner.property_level = 'rent_3' THEN 3
+                              WHEN p_owner.property_level = 'rent_4' THEN 4
+                              WHEN p_owner.property_level = 'rent_5' THEN 5
+                              ELSE 0 
+                          END
+                      ) 
+                  FROM 
+                      players AS p
+                  JOIN 
+                      player_property_ownership AS p_owner ON p.player_id = p_owner.player_id
+                  JOIN 
+                      board_cells AS cell ON p_owner.cell_id = cell.id
+                  WHERE 
+                      p.player_id = ?
+                  ) AS total_sell_branch,
+                  (SELECT 
+                      CASE ppo.property_level
+                          WHEN 'base_rent' THEN bc.base_rent
+                          WHEN 'rent_0' THEN bc.rent_0
+                          WHEN 'rent_1' THEN bc.rent_1
+                          WHEN 'rent_2' THEN bc.rent_2
+                          WHEN 'rent_3' THEN bc.rent_3
+                          WHEN 'rent_4' THEN bc.rent_4
+                          WHEN 'rent_5' THEN bc.rent_5
+                          ELSE 0
+                      END
+                  FROM 
+                      players AS p
+                  JOIN 
+                      player_property_ownership AS ppo ON p.cell_id = ppo.cell_id
+                  JOIN 
+                      board_cells AS bc ON ppo.cell_id = bc.id
+                  WHERE 
+                      p.player_id = ?
+                  ) AS total_rent
+          ) AS expenses;
+        `
+        executeQuery(query, [socket.id, socket.id, socket.id], 
+          (results: any) => {
+            if(results[0]['can_afford_expenses']) {
+              sendPopup(socket, 'rentCell');
+            } else {
+              sendPopup(socket, 'surrender');
+            }
+          }, 
+          (err: any) => {
+            console.error('Помилка можливості користувача оплатити витрати:', err);
+          }
+        );
       } else if(results[0]['type'] === 'chance'){
         sendPopup(socket, 'chance');
       } else if (results[0]['type'] === 'start') {
@@ -571,6 +681,53 @@ function sendPopup (socket: any, action: string) {
     if (popupInfoData) {
       const popupData = popupInfoData[action];
       const chance = getRandomChance(popupData);
+
+      if(chance.buttons[0]?.checkBalance) {
+        const query = `
+          SELECT 
+          CASE
+              WHEN (balance + COALESCE(total_sell_branch, 0) - ?) >= 0 THEN 1
+              ELSE 0
+          END AS can_afford_expenses
+          FROM (
+              SELECT 
+                  (SELECT p.balance FROM players p WHERE p.player_id = ?) AS balance,
+                  (SELECT 
+                      SUM(cell.sell_branch * 
+                          CASE 
+                              WHEN p_owner.property_level = 'rent_1' THEN 1
+                              WHEN p_owner.property_level = 'rent_2' THEN 2
+                              WHEN p_owner.property_level = 'rent_3' THEN 3
+                              WHEN p_owner.property_level = 'rent_4' THEN 4
+                              WHEN p_owner.property_level = 'rent_5' THEN 5
+                              ELSE 0 
+                          END
+                      ) 
+                  FROM 
+                      players AS p
+                  JOIN 
+                      player_property_ownership AS p_owner ON p.player_id = p_owner.player_id
+                  JOIN 
+                      board_cells AS cell ON p_owner.cell_id = cell.id
+                  WHERE 
+                      p.player_id = ?
+                  ) AS total_sell_branch
+          ) AS expenses;
+        `
+        executeQuery(query, [chance.cash, socket.id, socket.id], 
+          (results: any) => {
+            if(results[0]['can_afford_expenses']) {
+              socket.emit('showPlayerInfo', chance);
+            } else {
+              sendPopup(socket, 'surrender');
+            }
+          }, 
+          (err: any) => {
+            console.error('Помилка можливості користувача оплатити витрати:', err);
+          }
+        );
+      }
+
       socket.emit('showPlayerInfo', chance);
     } else {
         console.error('Дані popupInfo не завантажені');
@@ -755,7 +912,7 @@ function placePlayer() {
   );
 }
 
-function removePlayerFromTurnOrder(socketId: string) {
+function removePlayerFromTurnOrder(socketId: string, callback?: (() => void | undefined)) {
   getTurnOrderFromDatabase(
     (turnOrder: string) => {
       const updatedTurnOrder = turnOrder.split(',').filter((id: string) => {
@@ -763,8 +920,11 @@ function removePlayerFromTurnOrder(socketId: string) {
         return removeSocketId !== socketId;
       }).join(',');
     
-
-      updateTurnOrderInDatabase(updatedTurnOrder);
+      if(callback){
+        updateTurnOrderInDatabase(updatedTurnOrder, callback);
+      } else {
+        updateTurnOrderInDatabase(updatedTurnOrder);
+      }
     }
   );
 }
