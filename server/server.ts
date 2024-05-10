@@ -42,8 +42,8 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('throwDice', (doubleCheck: any)=> {
-    const random1 = Math.floor(Math.random() * 6) + 1;
-    const random2 = Math.floor(Math.random() * 6) + 1;
+    const random1 = 1//Math.floor(Math.random() * 6) + 1;
+    const random2 = 1//Math.floor(Math.random() * 6) + 1;
     socket.emit('throwDice', [random1, random2, true, doubleCheck]);    
     socket.broadcast.emit('throwDice', [random1, random2, false, doubleCheck]);
   })
@@ -97,13 +97,47 @@ io.sockets.on('connection', (socket: any) => {
 
               updateTurnOrderInDatabase(newTurnOrder, ()=> {
                 placePlayer();
-                nextTurn();
+
+                const query = `
+                  SELECT * FROM players WHERE session_id = 1
+                `;
+
+                executeQuery(query, [], 
+                  (results: any)=> {
+                    if (results.length > 0) {
+                      const activePlayers = results.filter((player: any) => player.active === 1);
+                      const numberOfActivePlayers = activePlayers.length;
+
+                      if (numberOfActivePlayers === 1) {
+                        if (popupInfoData) {
+                          const popupData = popupInfoData['gameOver'];
+                          popupData.text = activePlayers[0]['name'];
+
+                          results.forEach((row: any) => {
+                            const targetSocket = io.sockets.sockets.get(row['player_id']);
+  
+                            if(targetSocket){
+                              targetSocket.emit('showPlayerInfo', popupData);
+                            }
+                          });
+                        } else {
+                          console.error('Дані popupInfo не завантажені');
+                        }
+                      } else {
+                        nextTurn();
+                      }
+                    }
+                  },
+                  (err:any)=>{
+                    console.log("Помилка отримання гравців", err);
+                  }
+                );
               });
             }
           )
-      });
-    }, (err: any) => {
-      console.log("Помилка деактивації гравця: ", err);
+        });
+      }, (err: any) => {
+        console.log("Помилка деактивації гравця: ", err);
     })
   });
 
