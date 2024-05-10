@@ -42,8 +42,8 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('throwDice', (doubleCheck: any)=> {
-    const random1 = 1//Math.floor(Math.random() * 6) + 1;
-    const random2 = 1//Math.floor(Math.random() * 6) + 1;
+    const random1 = Math.floor(Math.random() * 6) + 1;
+    const random2 = Math.floor(Math.random() * 6) + 1;
     socket.emit('throwDice', [random1, random2, true, doubleCheck]);    
     socket.broadcast.emit('throwDice', [random1, random2, false, doubleCheck]);
   })
