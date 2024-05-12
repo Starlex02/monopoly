@@ -17,6 +17,10 @@ const io = new Server(server, config.websocket);
 // Параметри підключення до бази даних MySQL
 const connection = mysql.createConnection(config.database);
 
+// Ініціалізація таймерів
+const intervalTimer : any = [];
+const timeoutTimer  : any = [];
+
 // Підключення до бази даних
 connection.connect((err: any) => {
   if (err) {
@@ -34,7 +38,9 @@ loadPopupInfo(() => {
 
 // Обробник події підключення нового клієнта до WebSocket сервера
 io.sockets.on('connection', (socket: any) => {
-  handleNewPlayerConnection(socket.id);
+  handleNewPlayerConnection(socket.id, ()=> {
+    handleGameStart();
+  });
 
   // Ініціалізація дошки
   socket.on('getBoardCells', () => {
@@ -61,84 +67,7 @@ io.sockets.on('connection', (socket: any) => {
   });
 
   socket.on('surrender', (message: any) => {
-    const query = `
-      UPDATE players
-      SET active = 0
-      WHERE player_id = ?
-    `;
-
-    executeQuery(query, [socket.id], () => {
-      deletePlayerPropertyOwnership(socket.id);
-      removePlayerFromTurnOrder(socket.id, () => {
-        getTurnOrderFromDatabase(
-          (turnOrder: string) => {
-              let turnOrderArr: any[] = turnOrder.split(',');
-
-              let allRestGreatesThanOne = true;
-              for (let i = 0; i < turnOrderArr.length; i++) {
-                  if (turnOrderArr[i].split(':')[1] == 0) {
-                      allRestGreatesThanOne = false;
-                      break;
-                  }
-              }
-
-              if(allRestGreatesThanOne) {
-                turnOrderArr = turnOrderArr.map(element => {
-                  let [socketId, rest] = element.split(':');
-                  
-                  return `${socketId}:${parseInt(rest) - 1}`; 
-                });
-              } else {
-                const lastElement = turnOrderArr.pop();
-                turnOrderArr.unshift(lastElement);
-              }
-
-              const newTurnOrder: string = turnOrderArr.join(',');
-
-              updateTurnOrderInDatabase(newTurnOrder, ()=> {
-                placePlayer();
-
-                const query = `
-                  SELECT * FROM players WHERE session_id = 1
-                `;
-
-                executeQuery(query, [], 
-                  (results: any)=> {
-                    if (results.length > 0) {
-                      const activePlayers = results.filter((player: any) => player.active === 1);
-                      const numberOfActivePlayers = activePlayers.length;
-
-                      if (numberOfActivePlayers === 1) {
-                        if (popupInfoData) {
-                          const popupData = popupInfoData['gameOver'];
-                          popupData.text = activePlayers[0]['name'];
-
-                          results.forEach((row: any) => {
-                            const targetSocket = io.sockets.sockets.get(row['player_id']);
-  
-                            if(targetSocket){
-                              targetSocket.emit('showPlayerInfo', popupData);
-                            }
-                          });
-                        } else {
-                          console.error('Дані popupInfo не завантажені');
-                        }
-                      } else {
-                        nextTurn();
-                      }
-                    }
-                  },
-                  (err:any)=>{
-                    console.log("Помилка отримання гравців", err);
-                  }
-                );
-              });
-            }
-          )
-        });
-      }, (err: any) => {
-        console.log("Помилка деактивації гравця: ", err);
-    })
+    handleSurrender(socket.id);
   });
 
   socket.on('rentCell', (message: any) => {
@@ -295,9 +224,6 @@ io.sockets.on('connection', (socket: any) => {
       }
     );
   });
-
-  // Початок гри
-  handleGameStart();
 
   // Вихід гравця
   socket.on('disconnect', () => {
@@ -617,9 +543,16 @@ function handleGameStart() {
           (turnOrder: string) => {
             const socketId = turnOrder.split(',')[0].split(':')[0];
             const targetSocket = io.sockets.sockets.get(socketId);
-      
+
             if (targetSocket) {
-              sendPopup(targetSocket, 'throwDice');
+              getPlayersData((results: any) => {
+                startTimer(results, targetSocket);
+
+                sendPopup(targetSocket, 'throwDice');
+              }, (err: any) => {
+                console.error('Помилка отримання всіх гравців данної сесії:', err);
+              })
+              
             } else {
               console.error(`Сокет з ID ${socketId} не знайдено`);
             }
@@ -671,7 +604,7 @@ function getRandomColor() {
   return color;
 }
 
-function handleNewPlayerConnection(socketId: string) {
+function handleNewPlayerConnection(socketId: string, callback: () => void) {
   console.log('Клієнт підключений до WebSocket сервера');
 
   const player_id = socketId;
@@ -689,6 +622,7 @@ function handleNewPlayerConnection(socketId: string) {
       placePlayer();
 
       addPlayerToTurnOrder(socketId);
+      callback();
     },
     (err: any) => {
       console.error('Помилка запиту до бази даних:', err);
@@ -772,6 +706,8 @@ function sendPopup (socket: any, action: string) {
 }
 
 function nextTurn (){
+  stopTimer();
+
   getTurnOrderFromDatabase(
     (turnOrder: string) => {
       let newTurnOrder = rotateTurnOrder(turnOrder);
@@ -782,11 +718,17 @@ function nextTurn (){
       const targetSocket = io.sockets.sockets.get(socketId);
 
       if (targetSocket) {
-        if(parseInt(newTurnOrder.split(',')[0].split(':')[1]) > 0){
-          sendPopup(targetSocket, 'throwDiceOrPayOff');
-        } else {
-          sendPopup(targetSocket, 'throwDice');
-        }
+        getPlayersData((results: any) => {
+          startTimer(results, targetSocket);
+
+          if(parseInt(newTurnOrder.split(',')[0].split(':')[1]) > 0){
+            sendPopup(targetSocket, 'throwDiceOrPayOff');
+          } else {
+            sendPopup(targetSocket, 'throwDice');
+          }
+        }, (err: any) => {
+          console.error('Помилка отримання всіх гравців данної сесії:', err);
+        })
       } else {
         console.error(`Сокет з ID ${socketId} не знайдено`);
       }
@@ -1122,3 +1064,108 @@ function updatePropertyOwnershipIfSameType(socketId: any, callback: () => void) 
   )
 }
 
+function handleSurrender(socketId: any) {
+  const query = `
+      UPDATE players
+      SET active = 0
+      WHERE player_id = ?
+    `;
+
+    executeQuery(query, [socketId], () => {
+      deletePlayerPropertyOwnership(socketId);
+      removePlayerFromTurnOrder(socketId, () => {
+        getTurnOrderFromDatabase(
+          (turnOrder: string) => {
+              let turnOrderArr: any[] = turnOrder.split(',');
+
+              let allRestGreatesThanOne = true;
+              for (let i = 0; i < turnOrderArr.length; i++) {
+                  if (turnOrderArr[i].split(':')[1] == 0) {
+                      allRestGreatesThanOne = false;
+                      break;
+                  }
+              }
+
+              if(allRestGreatesThanOne) {
+                turnOrderArr = turnOrderArr.map(element => {
+                  let [socketId, rest] = element.split(':');
+                  
+                  return `${socketId}:${parseInt(rest) - 1}`; 
+                });
+              } else {
+                const lastElement = turnOrderArr.pop();
+                turnOrderArr.unshift(lastElement);
+              }
+
+              const newTurnOrder: string = turnOrderArr.join(',');
+
+              updateTurnOrderInDatabase(newTurnOrder, ()=> {
+                placePlayer();
+
+                const query = `
+                  SELECT * FROM players WHERE session_id = 1
+                `;
+
+                executeQuery(query, [], 
+                  (results: any)=> {
+                    if (results.length > 0) {
+                      const activePlayers = results.filter((player: any) => player.active === 1);
+                      const numberOfActivePlayers = activePlayers.length;
+
+                      if (numberOfActivePlayers === 1) {
+                        stopTimer();
+
+                        if (popupInfoData) {
+                          const popupData = popupInfoData['gameOver'];
+                          popupData.text = activePlayers[0]['name'];
+
+                          results.forEach((row: any) => {
+                            const targetSocket = io.sockets.sockets.get(row['player_id']);
+  
+                            if(targetSocket){
+                              targetSocket.emit('showPlayerInfo', popupData);
+                            }
+                          });
+                        } else {
+                          console.error('Дані popupInfo не завантажені');
+                        }
+                      } else {
+                        nextTurn();
+                      }
+                    }
+                  },
+                  (err:any)=>{
+                    console.log("Помилка отримання гравців", err);
+                  }
+                );
+              });
+            }
+          )
+        });
+      }, (err: any) => {
+        console.log("Помилка деактивації гравця: ", err);
+    })
+}
+
+function startTimer(playersRow: any, targetSocket: any) {
+  const playersSocket = playersRow.map((playerRow: any) => {
+    return io.sockets.sockets.get(playerRow['player_id']);
+  })
+
+  let timer = 0;
+  intervalTimer['1'] = setInterval(() => {
+    playersSocket.forEach((socket: any) => {
+      socket.emit('timer', [timer, targetSocket.id]);
+    });
+    timer++;
+  }, 1000);
+
+  timeoutTimer['1'] = setTimeout(() => {
+    handleSurrender(targetSocket.id);
+  }, 10000);
+}
+
+function stopTimer () {
+  clearInterval(intervalTimer['1']);
+  clearTimeout(timeoutTimer['1']);
+}

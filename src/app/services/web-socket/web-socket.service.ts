@@ -52,6 +52,14 @@ export class WebSocketService {
     });
   }
 
+  timer() {
+    return new Observable<any>(observer => {
+      this.socket.on('timer', (data: any) => {
+        observer.next(data);
+      });
+    });
+  }
+
   showPlayerInfo() {
     return new Observable<any>(observer => {
       this.socket.on('showPlayerInfo', (data: any) => {

@@ -19,6 +19,11 @@ export class PlayersComponent {
 
       this.webSocketService.emit('getBoardCells');
     });
+
+    this.webSocketService.timer().subscribe((message: any) => {
+      const targetPlayerIndex = this.playersInfo.findIndex((player: any) => player.player_id === message[1])
+      this.playersInfo[targetPlayerIndex]['timer'] = message[0];
+    });
   }
 }
 
