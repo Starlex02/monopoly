@@ -6,6 +6,10 @@
   height: 100%;
 }
 
+:host {
+  background-color: #ebf7ff;
+}
+
 .top {
   flex-direction: column;
 }
@@ -50,41 +54,41 @@ p {
 
 
 .group-1 {
-  background-color: red;
+  background-color: #ffffd6;
 }
 
 .group-2 {
-  background-color: yellow;
+  background-color: #ffff59;
 }
 
 .group-3 {
-  background-color: green;
+  background-color: #32bc49;
 }
 
 .group-4 {
-  background-color: blue;
+  background-color: #8f3eff;
 }
 
 .group-5 {
-  background-color: purple;
+  background-color: #bc3273;
 }
 
 .group-6 {
-  background-color: orange;
+  background-color: #da8e23;
 }
 
 .group-7 {
-  background-color: greenyellow;
+  background-color: #72d435;
 }
 
 .group-8 {
-  background-color: skyblue;
+  background-color: #32bcb9;
 }
 
 .group-9 {
-  background-color: brown;
+  background-color: #3e32bc;
 }
 
 .group-10 {
-  background-color: beige;
+  background-color: #bc3232;
 }
