@@ -1155,9 +1155,9 @@ function startTimer(playersRow: any, targetSocket: any) {
     timer++;
   }, 1000);
 
-  // timeoutTimer['1'] = setTimeout(() => {
-  //   handleSurrender(targetSocket.id);
-  // }, 10000);
+  timeoutTimer['1'] = setTimeout(() => {
+    handleSurrender(targetSocket.id);
+  }, 10000);
 }
 
 function stopTimer () {
