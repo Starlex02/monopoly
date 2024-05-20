@@ -1147,7 +1147,12 @@ function startTimer(playersRow: any, targetSocket: any) {
     return io.sockets.sockets.get(playerRow['player_id']);
   })
 
-  let timer = 0;
+  let timer = 1;
+  playersSocket.forEach((socket: any) => {
+    socket.emit('timer', [timer, targetSocket.id]);
+  });
+  timer++;
+
   intervalTimer['1'] = setInterval(() => {
     playersSocket.forEach((socket: any) => {
       socket.emit('timer', [timer, targetSocket.id]);
@@ -1157,7 +1162,7 @@ function startTimer(playersRow: any, targetSocket: any) {
 
   timeoutTimer['1'] = setTimeout(() => {
     handleSurrender(targetSocket.id);
-  }, 10000);
+  }, 120000);
 }
 
 function stopTimer () {
