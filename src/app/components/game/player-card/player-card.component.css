@@ -1,0 +1,89 @@
+.player-card {
+    max-height: calc(100vh / 5);
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 1;
+    padding: 1em;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: center;
+    gap: 0.1em;
+    position: relative;
+}
+
+p {
+    padding: 0;
+    margin: 0;
+}
+
+.avatar {
+    border: 2px solid black;
+    border-radius: 100%;
+    width: 50%;
+    aspect-ratio: 1/1;
+}
+
+.name {
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    font-size: 1em;
+}
+
+.balance {
+    font-size: 1.5em;
+}
+  
+.timer-container {
+    height: 25%;
+    position: absolute;
+    top: 3%;
+    left: 16%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.timer {
+    position: absolute;
+}
+  
+.circular-progress {
+    position: absolute;
+    height: 100%;
+    --size: 300px;
+    --half-size: calc(var(--size) / 2);
+    --stroke-width: 3em;
+    --radius: calc((var(--size) - var(--stroke-width)) / 2);
+    --circumference: calc(var(--radius) * pi * 2);
+    --dash: calc((var(--progress) * var(--circumference)) / 100);
+}
+
+.circular-progress circle {
+    cx: var(--half-size);
+    cy: var(--half-size);
+    r: var(--radius);
+    stroke-width: var(--stroke-width);
+    fill: none;
+    stroke-linecap: round;
+}
+
+.circular-progress circle.bg {
+    stroke: #fff;
+}
+
+.circular-progress circle.fg {
+    transform: rotate(-90deg);
+    transform-origin: var(--half-size) var(--half-size);
+    stroke-dasharray: var(--dash) calc(var(--circumference) - var(--dash));
+    transition: stroke-dasharray 0.3s linear 0s;
+    stroke: hsl(180, 100%, 50%);
+}
+
+@property --progress {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 0;
+}

@@ -1,5 +1,13 @@
-<div [ngStyle]="{'background-color': player.active ? player.color: 'lightgrey'}">
-    <p>{{player.name}}</p>
-    <p>{{player.balance}}</p>
-    <p>{{player.timer}}</p>
+<div class="player-card" [ngStyle]="{'background-color': player.active ? player.color: 'lightgrey'}">
+    <img class="avatar">
+    <p class="name">{{player.name}}</p>
+    <p class="balance">₴{{player.balance}}</p>
+    <div *ngIf="player.timer" class="timer-container">
+      <p class="timer">{{player.timer}}</p>
+      <svg width="300" height="300" viewBox="0 0 300 300" class="circular-progress" [ngStyle]="{'--progress': progress}">
+        <circle class="bg"></circle>
+        <circle class="fg" [ngStyle]="{'stroke': strokeColor}"></circle>
+      </svg>
+    </div>
 </div>
+
