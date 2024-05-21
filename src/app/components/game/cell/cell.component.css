@@ -10,6 +10,9 @@
   background-color: #ebf7ff;
 }
 
+:host.empty {
+  background-color: #1B262C;
+}
 .top {
   flex-direction: column;
 }
