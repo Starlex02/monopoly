@@ -1,9 +1,96 @@
 .popup {
-    width: auto;
-    height: auto;
-    border: 1px solid black;
-    background-color: antiquewhite;
-    position: absolute;
-    top: 18%;
-    left: 40%;
+  width: auto;
+  height: auto;
+  border: 1px solid black;
+  background-color: #ebf7ff;
+  position: absolute;
+  top: 18%;
+  left: 40%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1em;
+  max-width: 200px;
+}
+
+p,
+hr {
+  margin: 0;
+  padding: 0;
+}
+
+.main-info {
+  text-align: center;
+  border-radius: 1em 1em 0 0;
+  padding: 0.4em;
+}
+
+.name {
+  font-size: 2em;
+}
+
+.body-info {
+    padding: 1em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+}
+
+.base-rent,
+.full-rent,
+.rent,
+.buy,
+.buy-branch,
+.sell-branch,
+.buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+button {
+  border-radius: 1em;
+}
+
+.sum {
+    font-weight: bold;
+}
+
+.group-1 {
+  background-color: #ffffd6;
+}
+
+.group-2 {
+  background-color: #ffff59;
+}
+
+.group-3 {
+  background-color: #32bc49;
+}
+
+.group-4 {
+  background-color: #8f3eff;
+}
+
+.group-5 {
+  background-color: #bc3273;
+}
+
+.group-6 {
+  background-color: #da8e23;
+}
+
+.group-7 {
+  background-color: #72d435;
+}
+
+.group-8 {
+  background-color: #32bcb9;
+}
+
+.group-9 {
+  background-color: #3e32bc;
+}
+
+.group-10 {
+  background-color: #bc3232;
 }

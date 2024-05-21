@@ -1,16 +1,43 @@
 <div class="popup">
-    <p>{{ data?.name }}</p>
-    <p>{{ data?.group }}</p>
-    <p>Базова орендна плата {{ data?.base_rent }}</p>
-    <p>Орендна плата за всі картки цього типу {{ data?.rent_0 }}</p>
-    <p>⭐ {{ data?.rent_1 }}</p>
-    <p>⭐⭐ {{ data?.rent_2 }}</p>
-    <p>⭐⭐⭐ {{ data?.rent_3 }}</p>
-    <p>⭐⭐⭐⭐ {{ data?.rent_4 }}</p>
-    <p>🌟 {{ data?.rent_5 }}</p>
-    <hr>
-    <p>Купівля {{ data?.cost }}</p>
-    <p>Покупка філіала {{ data?.buy_branch }}</p>
-    <p>Продаж філіала {{ data?.sell_branch }}</p>
-    <button *ngFor="let button of data.buttons" (click)="buyOrSellBranch(button.action)" [disabled]="button.action == 'buyBranch' && playerBalance < data.buy_branch">{{button.label}}</button>
+    <div class="main-info" [ngClass]="data?.group_id ? 'group-' + data?.group_id : ''">
+        <p class="name">{{ data?.name }}</p>
+        <p class="group">{{ data?.group }}</p>
+    </div>
+    <div class="body-info">
+        <div class="base-rent">
+            <p>Базова орендна плата</p><p class="sum">{{ data?.base_rent }}</p>
+        </div>
+        <div class="full-rent">
+            <p>Орендна плата за монополію</p><p class="sum">{{ data?.rent_0 }}</p>
+        </div>
+        <div class="rent">
+            <p>⭐</p><p class="sum">{{ data?.rent_1 }}</p>
+        </div>
+        <div class="rent">
+            <p>⭐⭐</p><p class="sum">{{ data?.rent_2 }}</p>
+        </div>
+        <div class="rent">
+            <p>⭐⭐⭐</p><p class="sum">{{ data?.rent_3 }}</p>
+        </div>
+        <div class="rent">
+            <p>⭐⭐⭐⭐</p><p class="sum">{{ data?.rent_4 }}</p>
+        </div>
+        <div class="rent">
+            <p>🌟</p><p class="sum">{{ data?.rent_5 }}</p>
+        </div>
+        <hr>
+        <div class="buy">
+            <p>Купівля</p><p class="sum">{{ data?.cost }}</p>
+        </div>
+        <div class="buy-branch">
+            <p>Покупка філіала</p><p class="sum">{{ data?.buy_branch }}</p>
+        </div>
+        <div class="sell-branch">
+            <p>Продаж філіала</p><p class="sum">{{ data?.sell_branch }}</p>
+        </div>
+        <div class="buttons">
+            <button *ngFor="let button of data.buttons" (click)="buyOrSellBranch(button.action)" [ngClass]="button.action + 'Button'"
+                [disabled]="button.action == 'buyBranch' && playerBalance < data.buy_branch">{{button.label}}</button>
+        </div>
+    </div>
 </div>
