@@ -1,5 +1,26 @@
-:host{
+.popup{
     position: absolute;
     top: 50%;
     left: 50%;
+    display: flex;
+    border-radius: 1em;
+    padding: 1em;
+    flex-direction: column;
+    background-color: #ebf7ff;
+    gap: 1em;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-around;
+}
+
+button {
+    border-radius: 1em;
+    padding: 1em;
+}
+
+* {
+    margin: 0;
+    padding: 0;
 }
