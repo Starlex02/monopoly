@@ -2,8 +2,9 @@
   display: flex;
   position: absolute;
   gap: 2vw;
-  top: 44vh;
-  left: 52vw;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .dice {
