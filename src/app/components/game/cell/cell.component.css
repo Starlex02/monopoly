@@ -51,8 +51,19 @@ p {
   justify-content: center
 }
 
-.image {
-  flex: 8
+img {
+  flex: 8;
+  background-size: contain;
+  background-repeat: no-repeat;
+  padding: 0.3em;
+}
+
+.leftSide img {
+  transform: rotate(-90deg);
+}
+
+.rightSide img {
+  transform: rotate(90deg);
 }
 
 

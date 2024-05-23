@@ -1,5 +1,5 @@
 <div class="cell" [ngClass]="[cell?.type, cell?.pos ? cell.pos : '']">
-    <div class="image"></div>
+    <img [src]="cell.image ? '../../../../assets/' + cell.image + '.svg' : ''">
     <div [ngClass]="cell?.group_id ? 'group-' + cell?.group_id : ''">
         <p>{{ cell.rent || cell.cost }}</p>
     </div>
