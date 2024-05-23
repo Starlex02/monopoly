@@ -1,5 +1,5 @@
 <div class="player-card" [ngStyle]="{'background-color': player.active ? player.color: 'lightgrey'}">
-    <img class="avatar">
+    <img class="avatar" src="../../../../assets/player.svg">
     <p class="name">{{player.name}}</p>
     <p class="balance">₴{{player.balance}}</p>
     <div *ngIf="player.timer" class="timer-container">
