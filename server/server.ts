@@ -384,7 +384,7 @@ function updatePlayerPosition(socketId: any, message: any, onSuccess: Function, 
 
       const newPos = currentPosition + diceNumber > 40 ? currentPosition + diceNumber - 40 : currentPosition + diceNumber;
       if (currentPosition + diceNumber > 40) {
-        handleGetCash(socketId, 0, placePlayer);
+        handleGetCash(socketId, 1000, placePlayer);
       }
       updatePositionInDatabase(newPos, socketId, 
         () => {

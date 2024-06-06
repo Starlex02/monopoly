@@ -2,6 +2,6 @@
     <game-cell *ngFor="let cell of cells" [ngClass]="[cell.type, cell.pos ? cell.pos: '']" [id]="'cell-' + cell.id" [cell]="cell" (click)="showPopup(cell)" [ngStyle]="{'background-color': cell?.owner_color}"></game-cell>
 </div>
 
-<game-popup-card *ngIf="popupVisible" [data]="popupData" [playerBalance]="playerBalance" (closePopup)="onClosePopup()"></game-popup-card>
 <game-popup-info></game-popup-info>
+<game-popup-card *ngIf="popupVisible" [data]="popupData" [playerBalance]="playerBalance" (closePopup)="onClosePopup()"></game-popup-card>
 <game-dice></game-dice>
