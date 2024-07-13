@@ -603,7 +603,7 @@ function handleNewPlayerConnection(socketId: string, callback: () => void) {
   console.log('Клієнт підключений до WebSocket сервера');
 
   const player_id = socketId;
-  const name = `Player ${socketId}`;
+  const name = `Гравець ${socketId}`;
   const session_id = 1;
   const balance = 1000;
   const cell_id = 1;

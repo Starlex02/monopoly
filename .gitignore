@@ -12,9 +12,6 @@ npm-debug.log
 yarn-error.log
 /server/node_modules
 
-# Assets
-/src/assets
-
 # IDEs and editors
 .idea/
 .project
