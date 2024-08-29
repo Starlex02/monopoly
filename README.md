@@ -46,14 +46,14 @@ For the database (MySQL):
 
 [Install MySQL Community Downloads](https://dev.mysql.com/downloads/installer/) and run.
 
-```
-node initdatabase.ts
-```
-
 Change the configuration file:
 
 - Open server/config.ts.
 - Replace the values of the fields in the host, user, password, database sections with your database connection data:
+
+```
+node initdatabase.ts
+```
 
 4. Run the development server:
 
