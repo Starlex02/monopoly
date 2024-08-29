@@ -1,27 +1,75 @@
-# MonopolyApp
+# Monopoly Game
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.6.
+## Description
 
-## Development server
+This project presents an implementation of the classic Monopoly game using Angular for the front-end and Node.js with WebSocket for the back-end. The game features interactive gameplay with dynamic board updates, player tokens, and real-time communication between players. It allows players to roll dice, move tokens, buy properties, and manage their finances within the game.
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+## Functionality
 
-## Code scaffolding
+- Interactive Board: Players can see and interact with the game board, including properties and their owners.
+- Player Tokens: Tokens are dynamically placed on the board according to players' positions.
+- Real-Time Updates: The game uses WebSocket for real-time communication, updating the board and player actions instantly.
+- Popup Information: Detailed information about properties and actions are displayed in popups.
+- Dice Rolling: Players can roll dice to determine their moves, with the results shown visually.
+- Player Management: Player information is managed and displayed, including their balance and timer.
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+## Project Setup
 
-## Build
+1. Clone the repository:
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```
+git clone https://github.com/Starlex02/monopoly.git
+```
 
-## Running unit tests
+2. Navigate to the project directory:
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+```
+cd monopoly
+```
 
-## Running end-to-end tests
+3. Install dependencies:
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+For the front-end (Angular):
 
-## Further help
+```
+npm install
+```
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+For the back-end (Node.js):
+
+```
+cd server
+npm install
+```
+
+For the database (MySQL):
+
+[Install MySQL Community Downloads](https://dev.mysql.com/downloads/installer/)
+
+```
+node initdatabase.ts
+```
+
+4. Run the development server:
+
+```
+npm run server
+```
+
+5. Open the game:
+
+Visit http://localhost:4200 in your browser to join the game session. Ensure that at least 4 players join the session before starting the game.
+
+## Technologies Used
+
+- Angular: For building the front-end of the application, including components, services, and real-time updates.
+- Node.js: For creating the back-end server and managing WebSocket connections.
+- Socket.IO: For real-time communication between the server and clients.
+- MySQL: For managing game data and player information.
+- TypeScript: For type-safe development in Angular and Node.js.
+- CSS: For styling the game board and UI components.
+- HTML: For structuring the game's interface, including the board layout, player cards, popups, and dice.
+
+## Link to the Author
+
+[LinkedIn](https://www.linkedin.com/in/dmytro-chumak/)
