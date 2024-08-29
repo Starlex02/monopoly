@@ -52,7 +52,7 @@ Change the configuration file:
 - Replace the values of the fields in the host, user, password, database sections with your database connection data:
 
 ```
-node initdatabase.ts
+npm run initdatabase
 ```
 
 4. Run the development server:

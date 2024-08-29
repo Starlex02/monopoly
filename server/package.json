@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "concurrently \"ng serve\" \"ts-node-dev server.ts\""
+    "server": "concurrently \"ng serve\" \"ts-node-dev server.ts\"",
+    "initdatabase": "ts-node-dev initdatabase.ts"
   },
   "keywords": [],
   "author": "",
